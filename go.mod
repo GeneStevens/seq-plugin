@@ -2,7 +2,7 @@ module github.com/GeneStevens/seq-plugin
 
 go 1.27.2
 
-require github.com/GeneStevens/seq v0.0.0-20261017200614-adc64018fa47
+require github.com/GeneStevens/seq v0.0.0-20261017214314-1b65acc704fc
 
 require (
 	ergo.services/ergo v1.999.330 // indirect

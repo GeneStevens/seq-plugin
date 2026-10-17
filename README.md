@@ -28,20 +28,25 @@ with `git ls-remote https://github.com/GeneStevens/seq` (or `gh auth status`),
 and tell Go the repository is private: `export GOPRIVATE='github.com/GeneStevens/*'`
 (the plugin sets this itself when it builds).
 
-From a local checkout:
+A plugin installs into the config directory of the `claude` that runs the
+install. If you keep several Claude accounts, each with its own
+`CLAUDE_CONFIG_DIR`, run every `claude plugin` command under the one you will
+play in, or it installs somewhere you never look:
 
 ```sh
 git clone https://github.com/GeneStevens/seq-plugin
-cd seq-plugin
-./scripts/install-seq-mcp.sh        # builds seq-mcp once; optional, it also builds on first use
+export CLAUDE_CONFIG_DIR=...        # the account you play in; skip it for the default one
 cd ~                                # not inside the checkout (see below)
 claude plugin marketplace add /path/to/seq-plugin
 claude plugin install seq@seq
+claude plugin list                  # seq@seq should be listed, under the same CLAUDE_CONFIG_DIR
 ```
 
-Or, inside Claude Code: `/plugin marketplace add GeneStevens/seq-plugin`, then
-`/plugin install seq@seq`. To try a checkout without installing it:
-`claude --plugin-dir /path/to/seq-plugin`.
+(Or per command: `env CLAUDE_CONFIG_DIR=... claude plugin install seq@seq`.) If
+`claude plugin list` under that directory does not show `seq@seq`, the install
+went to another account's directory. Or, inside Claude Code: `/plugin marketplace
+add GeneStevens/seq-plugin`, then `/plugin install seq@seq`. To try a checkout
+without installing it: `claude --plugin-dir /path/to/seq-plugin`.
 
 Then `/plugin configure seq@seq` (or pass `--config KEY=VALUE` to `claude plugin
 install`) sets:
@@ -58,9 +63,42 @@ Nothing in this plugin holds a credential. `claude mcp list` should then show
 `plugin:seq:seq ... Connected`, and in a session `/mcp` lists the server's tools. Start with: *"Play SEQ: make a warrior
 called Aria and look around."*
 
-If the first start is slow, that is the one-time build of `seq-mcp` (kept in the
-plugin's data directory, one binary per pinned commit); run
-`scripts/install-seq-mcp.sh` yourself to see its output.
+The first start builds `seq-mcp` from source (kept in the plugin's data
+directory, one binary per pinned commit), which takes a while; Claude Code may
+show the server as failed until it finishes, and `/mcp` then reconnects it.
+`scripts/install-seq-mcp.sh` run by hand does not help: it builds into
+`~/.cache/seq-plugin`, not the plugin's data directory, so it only warms Go's cache.
+
+## Play on a local server
+
+To try the plugin without an invitation, run your own server on the game's
+content. Needs Go, openssl (RSA keys; LibreSSL's EC keys are refused) and the
+same read access as above. `scripts/local-server.sh` does all of this (a
+certificate in `~/.seq-local`, `seqd` at the pinned commit on the pinned `seq-world`
+packs, the credential file) and prints the `--config` values for the plugin:
+
+```sh
+./scripts/local-server.sh
+```
+
+By hand, with `$SEQ` a `seq` checkout and `$WORLD` a `seq-world` checkout (at the
+commits in `scripts/pin.env`):
+
+```sh
+umask 077; mkdir -p ~/.seq-local; cd ~/.seq-local
+openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 30 \
+  -subj /CN=localhost -addext subjectAltName=DNS:localhost,IP:127.0.0.1
+(cd "$SEQ" && go build -o ~/.seq-local/seqd ./cmd/seqd)
+./seqd -listen 127.0.0.1:8443 -cert cert.pem -key key.pem -packs "$WORLD/packs" \
+  -dev-account me -dev-agent claude
+# prints: agent credential claude for me-1, me-2: seq_ag_...
+```
+
+Put that `seq_ag_...` value alone on a line in `~/.seq-local/credential` (made
+under `umask 077`). Then set `server_url` to `wss://127.0.0.1:8443/seq/v1`,
+`credential_file` to that file and `ca_file` to `cert.pem`. The server keeps its
+accounts in memory: **after a restart the old credential is dead**, so put the new
+one in the file and restart the seq server in Claude Code (`/mcp`).
 
 ## Check it
 
@@ -79,7 +117,7 @@ few seconds and fetches nothing but the pinned modules.
 .claude-plugin/plugin.json        manifest and the options above
 .claude-plugin/marketplace.json   lets this repository be added as a marketplace
 mcp/seq.json                      the seq-mcp server (server, credential file and certificate from the options)
-scripts/                          build and start seq-mcp, pins, hygiene check
+scripts/                          build and start seq-mcp, a local server, pins, hygiene check
 skills/play-seq/SKILL.md          how Claude plays
 test/firstcontract/               the end-to-end test
 ```

@@ -32,6 +32,10 @@ the candidates and nothing happens; ask again with one of them.
    keeps running between your calls.
 2. Use `go_to` before `talk_to` or `attack` when something is far away. The
    tools walk for you, but walking first lets you see what is on the way.
+   A long walk answers after about 15 seconds with "Still walking to ...: 120 m
+   to go. Ask again to keep going." That is not a failure: the character keeps
+   walking. Ask again (the same call) until you arrive or are told why you
+   stopped (hit on the way, blocked, dead). Do not report it as stuck.
 3. The contract flow: `go_to` the contract board, `contracts` to read what is
    on offer, tell the player the choices with their rewards, `take_contract`,
    do the work (hunts: `attack` the named creature and `loot` the drops;
@@ -39,7 +43,9 @@ the candidates and nothing happens; ask again with one of them.
    `go_to` the board and `turn_in`.
 4. A fight happens in real time. `attack` returns at once; `look` or
    `whats_attacking_me` shows how it is going. If health is low, stop
-   fighting and say so rather than pressing on.
+   fighting and say so rather than pressing on. `whats_attacking_me` also lists
+   creatures that have picked you as their target and not struck yet; count them
+   as incoming.
 5. If you die, tell the player, then `release` to wake at the bind point.
    Do not go back to the same fight without asking.
 
