@@ -7,7 +7,8 @@
         "SEQ_SERVER_URL": "${user_config.server_url}",
         "SEQ_CREDENTIAL_FILE": "${user_config.credential_file}",
         "SEQ_ACCOUNT": "${user_config.account}",
-        "SEQ_CA_FILE": "${user_config.ca_file}"
+        "SEQ_CA_FILE": "${user_config.ca_file}",
+        "SEQ_LOG_DIR": "${user_config.log_dir}"
       }
     }
   }

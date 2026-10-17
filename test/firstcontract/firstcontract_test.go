@@ -152,6 +152,73 @@ func serverCert(t *testing.T, url string) []byte {
 	return conn.ConnectionState().PeerCertificates[0].Raw
 }
 
+// checkSessionLog expects one session directory in logs, with record.jsonl,
+// tools.jsonl and session.json, all naming the same session id, and none of the
+// credential in any file.
+func checkSessionLog(t *testing.T, logs, secret string) {
+	t.Helper()
+	dirs, err := os.ReadDir(logs)
+	if err != nil || len(dirs) != 1 || !dirs[0].IsDir() {
+		t.Fatalf("want one session directory under %s, got %v (%v)", logs, dirs, err)
+	}
+	sd := filepath.Join(logs, dirs[0].Name())
+	var meta struct{ Session string }
+	for _, name := range []string{"record.jsonl", "tools.jsonl", "session.json"} {
+		b, err := os.ReadFile(filepath.Join(sd, name))
+		if err != nil || len(b) == 0 {
+			t.Fatalf("session log %s: %v (%d bytes)", name, err, len(b))
+		}
+		if bytes.Contains(b, []byte(secret)) || bytes.Contains(b, []byte("seq_ag_")) || bytes.Contains(b, []byte("seq_st_")) {
+			t.Errorf("%s holds a credential", name)
+		}
+		if name == "session.json" {
+			if err := json.Unmarshal(b, &meta); err != nil || meta.Session == "" {
+				t.Fatalf("session.json: no session id (%v): %s", err, b)
+			}
+		}
+	}
+	if !strings.HasSuffix(dirs[0].Name(), "-"+meta.Session) {
+		t.Errorf("directory %s is not named for session %s", dirs[0].Name(), meta.Session)
+	}
+	for _, name := range []string{"record.jsonl", "tools.jsonl", "session.json"} {
+		b, _ := os.ReadFile(filepath.Join(sd, name))
+		if !bytes.Contains(b, []byte(meta.Session)) {
+			t.Errorf("%s does not name session %s", name, meta.Session)
+		}
+	}
+	t.Logf("session log %s: record.jsonl, tools.jsonl, session.json, session %s", dirs[0].Name(), meta.Session)
+}
+
+// TestLauncherLogLocation: the launcher turns logging on by default per client
+// and a user setting turns it off.
+func TestLauncherLogLocation(t *testing.T) {
+	root := repoRoot(t)
+	pin := pins(t, root)
+	bin := t.TempDir()
+	fake := filepath.Join(bin, "seq-mcp-"+pin["SEQ_COMMIT"])
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\necho \"log=${SEQ_LOG_DIR-unset}\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	launch := func(env ...string) string {
+		return run(t, root, append([]string{"SEQ_PLUGIN_BIN_DIR=" + bin, "SEQ_LOG_DIR=", "CLAUDE_PLUGIN_DATA=", "XDG_DATA_HOME=", "HOME=/h"}, env...), filepath.Join(root, "scripts", "seq-mcp-run.sh"))
+	}
+	for _, c := range []struct {
+		name string
+		env  []string
+		want string
+	}{
+		{"claude", []string{"CLAUDE_PLUGIN_DATA=/d"}, "log=/d/logs"},
+		{"codex or gemini", nil, "log=/h/.local/share/seq/logs"},
+		{"xdg", []string{"XDG_DATA_HOME=/x"}, "log=/x/seq/logs"},
+		{"user directory", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOG_DIR=/mine"}, "log=/mine"},
+		{"off", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOG_DIR=off"}, "log=unset"},
+	} {
+		if got := launch(c.env...); got != c.want {
+			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
 func TestFirstContractInThornwick(t *testing.T) {
 	began := time.Now()
 	root := repoRoot(t)
@@ -177,6 +244,7 @@ func TestFirstContractInThornwick(t *testing.T) {
 	if err := os.WriteFile(credFile, []byte(s.AgentSecret("ann", "c1")+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	secret := s.AgentSecret("ann", "c1")
 	cert := serverCert(t, s.URL())
 	caFile := filepath.Join(dir, "server.pem")
 	if err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert}), 0o600); err != nil {
@@ -195,6 +263,7 @@ func TestFirstContractInThornwick(t *testing.T) {
 		"${user_config.credential_file}", credFile,
 		"${user_config.account}", "",
 		"${user_config.ca_file}", caFile,
+		"${user_config.log_dir}", "",
 	)
 	var cfg struct {
 		MCPServers map[string]struct {
@@ -211,7 +280,10 @@ func TestFirstContractInThornwick(t *testing.T) {
 		t.Fatal("mcp/seq.json must not hold a credential")
 	}
 	cmd := exec.Command(srv.Command, srv.Args...)
-	cmd.Env = append(os.Environ(), "SEQ_PLUGIN_BIN_DIR="+binDir)
+	// Claude Code gives the plugin a data directory; logging is on by default
+	// there, and the test sets no log option.
+	dataDir := t.TempDir()
+	cmd.Env = append(os.Environ(), "SEQ_PLUGIN_BIN_DIR="+binDir, "CLAUDE_PLUGIN_DATA="+dataDir, "SEQ_LOG_DIR=")
 	for k, v := range srv.Env {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
@@ -271,6 +343,7 @@ func TestFirstContractInThornwick(t *testing.T) {
 	c.call("logout", obj{})
 
 	once.Do(func() { in.Close(); _ = cmd.Wait() })
+	checkSessionLog(t, filepath.Join(dataDir, "logs"), string(secret))
 	took := time.Since(began)
 	if p := os.Getenv("FIRSTCONTRACT_TRANSCRIPT"); p != "" {
 		_ = os.WriteFile(p, []byte(c.log.String()), 0o644)
