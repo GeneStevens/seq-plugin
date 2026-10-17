@@ -5,7 +5,8 @@
   "contextFileName": "GEMINI.md",
   "mcpServers": {
     "seq": {
-      "command": "${extensionPath}${/}scripts${/}seq-mcp-run.sh"
+      "command": "${extensionPath}${/}scripts${/}seq-mcp-run.sh",
+      "env": { "SEQ_CLIENT": "gemini" }
     }
   }
 }

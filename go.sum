@@ -4,6 +4,8 @@ github.com/GeneStevens/seq v0.0.0-20261017214314-1b65acc704fc h1:CyI4CMqtxJQv5/X
 github.com/GeneStevens/seq v0.0.0-20261017214314-1b65acc704fc/go.mod h1:TLEerv8+R6eDuLDq7O6ExpApGAmPcLWHpe/mJkPJQck=
 github.com/GeneStevens/seq v0.0.0-20261017222014-97ad55532213 h1:g6mFh3fIndLGP8PpbXtDlIkCMdcgF0O8g7mGTSSKbeY=
 github.com/GeneStevens/seq v0.0.0-20261017222014-97ad55532213/go.mod h1:TLEerv8+R6eDuLDq7O6ExpApGAmPcLWHpe/mJkPJQck=
+github.com/GeneStevens/seq v0.0.0-20261017232415-8c79e74393aa h1:wgfwSoAjA3b4xWovF8qK1IPIlDZdJU5/lMOSYOg0hTA=
+github.com/GeneStevens/seq v0.0.0-20261017232415-8c79e74393aa/go.mod h1:TLEerv8+R6eDuLDq7O6ExpApGAmPcLWHpe/mJkPJQck=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
 github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
