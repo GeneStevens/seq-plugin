@@ -1,0 +1,16 @@
+{
+  "name": "seq",
+  "owner": {
+    "name": "Gene Stevens"
+  },
+  "plugins": [
+    {
+      "name": "seq",
+      "source": "./",
+      "description": "Play SEQ by talking to Claude Code."
+    }
+  ],
+  "metadata": {
+    "description": "The SEQ plugin for Claude Code"
+  }
+}
