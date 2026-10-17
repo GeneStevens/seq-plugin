@@ -1,0 +1,11 @@
+{
+  "name": "seq",
+  "version": "0.1.0",
+  "description": "Play SEQ, a multiplayer fantasy RPG, by talking to Gemini CLI: look, walk, take contracts, fight and hand them in.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "seq": {
+      "command": "${extensionPath}${/}scripts${/}seq-mcp-run.sh"
+    }
+  }
+}

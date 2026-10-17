@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "seq",
+  "version": "0.1.0",
+  "description": "Play SEQ, a multiplayer fantasy RPG, by talking to Codex: the how-to-play skill. The seq MCP server is added by scripts/codex-install.sh.",
+  "skills": "./skills/"
+}
