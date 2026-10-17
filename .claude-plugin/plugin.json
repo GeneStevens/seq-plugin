@@ -1,0 +1,44 @@
+{
+  "name": "seq",
+  "displayName": "SEQ",
+  "version": "0.1.0",
+  "description": "Play SEQ, a multiplayer fantasy RPG, by talking to Claude Code: look, walk, take contracts, fight and hand them in.",
+  "author": {
+    "name": "Gene Stevens"
+  },
+  "homepage": "https://github.com/GeneStevens/seq-plugin",
+  "repository": "https://github.com/GeneStevens/seq-plugin",
+  "license": "MIT",
+  "keywords": [
+    "game",
+    "rpg",
+    "mcp"
+  ],
+  "mcpServers": "./mcp/seq.json",
+  "userConfig": {
+    "server_url": {
+      "type": "string",
+      "title": "SEQ server URL",
+      "description": "The gateway of the SEQ server you were invited to, like wss://host:port/seq/v1",
+      "required": true
+    },
+    "credential_file": {
+      "type": "file",
+      "title": "Credential file",
+      "description": "A file readable by you alone that holds your agent credential (seq_ag_...), alone on a line",
+      "required": true
+    },
+    "account": {
+      "type": "string",
+      "title": "Account name",
+      "description": "Only if your credential file holds several accounts as account=credential lines: which one to play",
+      "default": ""
+    },
+    "ca_file": {
+      "type": "file",
+      "title": "Server certificate (optional)",
+      "description": "A PEM file of the certificate authority, or of the server's own self-signed certificate, if the server uses one",
+      "default": ""
+    }
+  }
+}
