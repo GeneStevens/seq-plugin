@@ -65,8 +65,9 @@ session id reads one.
 Your own copy of the session is kept on the player's machine, a folder per
 session. If they ask where their logs are, tell them: with Claude Code in the
 plugin's data folder under `logs/` (`/plugin configure seq@seq` can move it or
-turn it off), with Codex CLI and Gemini CLI in `~/.local/share/seq/logs` unless
-`SEQ_LOG_DIR` says otherwise. To watch a session again: `seq-tui -replay
+turn it off), with Codex CLI in `~/.local/share/seq/logs/codex` and Gemini CLI
+in `~/.local/share/seq/logs/gemini` unless `SEQ_LOG_DIR` says otherwise
+(`SEQ_LOGGING=off` turns logging off). To watch a session again: `seq-tui -replay
 <that folder>/record.jsonl`. These files hold the whole conversation with the
 game, so tell them to look before sharing one.
 

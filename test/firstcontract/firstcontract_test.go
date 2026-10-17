@@ -200,7 +200,7 @@ func TestLauncherLogLocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	launch := func(env ...string) string {
-		return run(t, root, append([]string{"SEQ_PLUGIN_BIN_DIR=" + bin, "SEQ_LOG_DIR=", "CLAUDE_PLUGIN_DATA=", "XDG_DATA_HOME=", "HOME=/h"}, env...), filepath.Join(root, "scripts", "seq-mcp-run.sh"))
+		return run(t, root, append([]string{"SEQ_PLUGIN_BIN_DIR=" + bin, "SEQ_LOG_DIR=", "SEQ_LOGGING=", "SEQ_CLIENT=", "CLAUDE_PLUGIN_DATA=", "XDG_DATA_HOME=", "HOME=/h"}, env...), filepath.Join(root, "scripts", "seq-mcp-run.sh"))
 	}
 	for _, c := range []struct {
 		name string
@@ -208,10 +208,22 @@ func TestLauncherLogLocation(t *testing.T) {
 		want string
 	}{
 		{"claude", []string{"CLAUDE_PLUGIN_DATA=/d"}, "log=/d/logs"},
-		{"codex or gemini", nil, "log=/h/.local/share/seq/logs"},
-		{"xdg", []string{"XDG_DATA_HOME=/x"}, "log=/x/seq/logs"},
+		{"claude named", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_CLIENT=claude"}, "log=/d/logs"},
+		{"codex", []string{"SEQ_CLIENT=codex"}, "log=/h/.local/share/seq/logs/codex"},
+		{"gemini", []string{"SEQ_CLIENT=gemini"}, "log=/h/.local/share/seq/logs/gemini"},
+		{"unknown client", []string{"SEQ_CLIENT=zed"}, "log=/h/.local/share/seq/logs/other"},
+		{"no client", nil, "log=/h/.local/share/seq/logs/other"},
+		{"xdg", []string{"SEQ_CLIENT=codex", "XDG_DATA_HOME=/x"}, "log=/x/seq/logs/codex"},
 		{"user directory", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOG_DIR=/mine"}, "log=/mine"},
-		{"off", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOG_DIR=off"}, "log=unset"},
+		{"user directory codex", []string{"SEQ_CLIENT=codex", "SEQ_LOG_DIR=/mine"}, "log=/mine"},
+		{"logging true", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOGGING=true"}, "log=/d/logs"},
+		{"logging off claude", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOGGING=off"}, "log=unset"},
+		{"logging false claude", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOGGING=false"}, "log=unset"},
+		{"logging 0 codex", []string{"SEQ_CLIENT=codex", "SEQ_LOGGING=0"}, "log=unset"},
+		{"logging off gemini", []string{"SEQ_CLIENT=gemini", "SEQ_LOGGING=off"}, "log=unset"},
+		{"logging off beats directory", []string{"SEQ_LOGGING=off", "SEQ_LOG_DIR=/mine"}, "log=unset"},
+		{"legacy off", []string{"CLAUDE_PLUGIN_DATA=/d", "SEQ_LOG_DIR=off"}, "log=unset"},
+		{"legacy off codex", []string{"SEQ_CLIENT=codex", "SEQ_LOG_DIR=off"}, "log=unset"},
 	} {
 		if got := launch(c.env...); got != c.want {
 			t.Errorf("%s: %q, want %q", c.name, got, c.want)
@@ -264,6 +276,7 @@ func TestFirstContractInThornwick(t *testing.T) {
 		"${user_config.account}", "",
 		"${user_config.ca_file}", caFile,
 		"${user_config.log_dir}", "",
+		"${user_config.logging}", "true",
 	)
 	var cfg struct {
 		MCPServers map[string]struct {
@@ -283,7 +296,7 @@ func TestFirstContractInThornwick(t *testing.T) {
 	// Claude Code gives the plugin a data directory; logging is on by default
 	// there, and the test sets no log option.
 	dataDir := t.TempDir()
-	cmd.Env = append(os.Environ(), "SEQ_PLUGIN_BIN_DIR="+binDir, "CLAUDE_PLUGIN_DATA="+dataDir, "SEQ_LOG_DIR=")
+	cmd.Env = append(os.Environ(), "SEQ_PLUGIN_BIN_DIR="+binDir, "CLAUDE_PLUGIN_DATA="+dataDir, "SEQ_LOG_DIR=", "SEQ_CLIENT=")
 	for k, v := range srv.Env {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}

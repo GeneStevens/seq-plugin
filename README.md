@@ -151,10 +151,12 @@ whole folder at 256 MB (the oldest sessions go first).
 | Client | Where the logs are |
 | --- | --- |
 | Claude Code | the plugin's data folder, `logs/`, under your `CLAUDE_CONFIG_DIR`'s `plugins/data`; `/plugin configure seq@seq` sets another with "Session log directory" |
-| Codex CLI | `~/.local/share/seq/logs` (or `$XDG_DATA_HOME/seq/logs`); `SEQ_LOG_DIR` at install time moves it |
-| Gemini CLI | the same, `~/.local/share/seq/logs`; export `SEQ_LOG_DIR` where you start `gemini` |
+| Codex CLI | `~/.local/share/seq/logs/codex` (or `$XDG_DATA_HOME/seq/logs/codex`); `SEQ_LOG_DIR` at install time moves it |
+| Gemini CLI | `~/.local/share/seq/logs/gemini` (or under `$XDG_DATA_HOME`); export `SEQ_LOG_DIR` where you start `gemini` |
 
-Codex and Gemini give a plugin no data folder of its own, so they share one place.
+Codex and Gemini give a plugin no data folder of its own, so each gets its own
+subfolder of `seq/logs`; an unknown client (the launcher is told which one by
+`SEQ_CLIENT`) uses `seq/logs/other`. `SEQ_LOG_DIR` is only a location.
 
 **Replay one** in the SEQ terminal client: `seq-tui -replay
 ~/.local/share/seq/logs/<session folder>/record.jsonl` (add `-text` for plain text).
@@ -171,10 +173,15 @@ and its session id, which is in the folder name. Look through them first:
 the answers your AI client was given, which is your conversation with the game.
 The credential is not in them. The server's side is found by the session id.
 
-**Turn logging off.** Claude Code: `/plugin configure seq@seq` and type `off` for
-the session log directory. Codex CLI: `SEQ_LOG_DIR=off` when you run
-`scripts/codex-install.sh`. Gemini CLI: `export SEQ_LOG_DIR=off` where you start
-`gemini`. Delete the folder at any time; nothing needs it.
+**Turn logging off.** It is its own setting, `SEQ_LOGGING` (`off`, `false` or `0`
+turns it off). Claude Code: `/plugin configure seq@seq` and untick "Keep session
+logs". Codex CLI: `SEQ_LOGGING=off` when you run `scripts/codex-install.sh`.
+Gemini CLI: `export SEQ_LOGGING=off` where you start `gemini`. Delete the folder at
+any time; nothing needs it.
+
+*Old setting:* `SEQ_LOG_DIR=off` (typing `off` in "Session log directory") still
+turns logging off for this release; use `SEQ_LOGGING` instead, as the old value
+will stop working.
 
 ## Update the guide
 
