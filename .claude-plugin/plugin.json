@@ -39,6 +39,12 @@
       "title": "Server certificate (optional)",
       "description": "A PEM file of the certificate authority, or of the server's own self-signed certificate, if the server uses one",
       "default": ""
+    },
+    "log_dir": {
+      "type": "string",
+      "title": "Session log directory (optional)",
+      "description": "Where seq-mcp keeps a log of each play session. Empty keeps them in the plugin's data directory (logs/); type off to turn logging off",
+      "default": ""
     }
   }
 }

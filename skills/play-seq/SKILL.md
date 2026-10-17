@@ -25,6 +25,10 @@ the candidates and nothing happens; ask again with one of them.
 - `take_contract`, `turn_in`, `attack`, `cast`, `loot`, `use_door`.
 - `whats_attacking_me` says who is hitting you.
 - `release` brings you back after death. `logout` ends the session.
+- `session_log` gives the server's log of a session: the connection, each thing
+  you asked for and the answer you were given, chat as shown, moves between
+  zones, errors and the disconnect. With no session named it is this one.
+  `my_sessions` lists the player's recent sessions, newest first, to pick another.
 
 ## How to play
 
@@ -48,6 +52,23 @@ the candidates and nothing happens; ask again with one of them.
    as incoming.
 5. If you die, tell the player, then `release` to wake at the bind point.
    Do not go back to the same fight without asking.
+
+## What happened?
+
+When the player asks "what happened?", "what was that?" or "why did I die?",
+answer from the record, not from memory or a guess: call `session_log` (and
+`whats_attacking_me` and `look` for the moment), read what was done and what the
+game said back, and tell them in a few plain lines. If the log does not say, say
+so. For an earlier session, `my_sessions` lists them and `session_log` with that
+session id reads one.
+
+Your own copy of the session is kept on the player's machine, a folder per
+session. If they ask where their logs are, tell them: with Claude Code in the
+plugin's data folder under `logs/` (`/plugin configure seq@seq` can move it or
+turn it off), with Codex CLI and Gemini CLI in `~/.local/share/seq/logs` unless
+`SEQ_LOG_DIR` says otherwise. To watch a session again: `seq-tui -replay
+<that folder>/record.jsonl`. These files hold the whole conversation with the
+game, so tell them to look before sharing one.
 
 ## Ask the player first
 

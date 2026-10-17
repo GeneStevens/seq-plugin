@@ -133,6 +133,49 @@ tools. First prompt: *"Play SEQ: make a warrior called Aria and look around."*
 Run `scripts/install-seq-mcp.sh` once first so the build does not delay the
 connection.
 
+## Your logs
+
+`seq-mcp` keeps a log of every play session on your machine, on by default. One
+folder per session, named `<yyyymmdd-hhmmss>-<session id>`, holding:
+
+- `record.jsonl`: every message the server sent, so a session can be replayed;
+- `tools.jsonl`: each tool call, its arguments, a short answer, and the ids of the
+  intents it sent;
+- `session.json`: the session id, the server (without credentials), the character
+  and the times.
+
+The session id is the same in all three files and in the server's own log of the
+session. Your credential is never written. Each session is capped at 32 MB and the
+whole folder at 256 MB (the oldest sessions go first).
+
+| Client | Where the logs are |
+| --- | --- |
+| Claude Code | the plugin's data folder, `logs/`, under your `CLAUDE_CONFIG_DIR`'s `plugins/data`; `/plugin configure seq@seq` sets another with "Session log directory" |
+| Codex CLI | `~/.local/share/seq/logs` (or `$XDG_DATA_HOME/seq/logs`); `SEQ_LOG_DIR` at install time moves it |
+| Gemini CLI | the same, `~/.local/share/seq/logs`; export `SEQ_LOG_DIR` where you start `gemini` |
+
+Codex and Gemini give a plugin no data folder of its own, so they share one place.
+
+**Replay one** in the SEQ terminal client: `seq-tui -replay
+~/.local/share/seq/logs/<session folder>/record.jsonl` (add `-text` for plain text).
+
+**The server's log of your sessions.** Ask your AI client: *"List my SEQ sessions"*
+and *"Show me the log of this session"* or *"Why did I die?"*. It uses the
+`my_sessions` and `session_log` tools, which answer only for your own account; the
+log has what you asked for, the answers you were given, chat as shown, moves between
+zones, errors and the disconnect.
+
+**Share a session for support** by sending the session's folder (the three files)
+and its session id, which is in the folder name. Look through them first:
+`tools.jsonl` and `record.jsonl` hold what the game said and the chat you saw, and
+the answers your AI client was given, which is your conversation with the game.
+The credential is not in them. The server's side is found by the session id.
+
+**Turn logging off.** Claude Code: `/plugin configure seq@seq` and type `off` for
+the session log directory. Codex CLI: `SEQ_LOG_DIR=off` when you run
+`scripts/codex-install.sh`. Gemini CLI: `export SEQ_LOG_DIR=off` where you start
+`gemini`. Delete the folder at any time; nothing needs it.
+
 ## Update the guide
 
 Edit `guide/PLAY.md` only, then run `scripts/gen-guide.sh`: it rewrites the Claude
@@ -180,7 +223,9 @@ installed), that the guide copies match `guide/PLAY.md`, that Codex CLI and Gemi
 (each skipped if not installed) accept the packaging in a throwaway config directory
 (`scripts/check-clients.sh`: no login, no chat) and then plays a first contract in Thornwick: a local server on the
 Thornwick packs, the plugin's own `seq-mcp` command over stdio, a new character
-who takes "Word from Wickett Mill", walks there, comes back and is paid. It takes a
+who takes "Word from Wickett Mill", walks there, comes back and is paid, and the
+session's log files (one session id, no credential). The launcher's log locations are
+checked too. It takes a
 few seconds and fetches nothing but the pinned modules.
 
 ## Layout
