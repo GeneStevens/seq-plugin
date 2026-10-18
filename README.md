@@ -79,6 +79,10 @@ Check: `claude mcp list` shows `plugin:seq:seq ... Connected`, and in a session
 `/mcp` lists the server's tools. First prompt: *"Play SEQ: make a warrior
 called Aria and look around."*
 
+A new character in Thornwick is offered First Steps, a short guided walk (the
+greeter, your class trainer, a contract board, the east gate). It is only a guide:
+ask the agent to skip it, and it uses `dismiss_quest` to end it for good.
+
 The first start builds `seq-mcp` from source (kept in the plugin's data
 directory, one binary per pinned commit), which takes a while; Claude Code may
 show the server as failed until it finishes, and `/mcp` then reconnects it.
@@ -266,7 +270,8 @@ no chat; a local server, the server started the way that client starts it, then
 starts the server itself, so its variable redaction is part of the test) and then plays a first contract in Thornwick: a local server on the
 Thornwick packs, the plugin's own `seq-mcp` command over stdio, a new character
 who takes "Word from Wickett Mill", walks there, comes back and is paid, and the
-session's log files (one session id, no credential). The launcher's log locations are
+session's log files (one session id, no credential). A second test walks a new
+character through First Steps, and another dismisses it. The launcher's log locations are
 checked too. It takes a
 few seconds and fetches nothing but the pinned modules.
 

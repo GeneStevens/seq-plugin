@@ -231,8 +231,10 @@ func TestLauncherLogLocation(t *testing.T) {
 	}
 }
 
-func TestFirstContractInThornwick(t *testing.T) {
-	began := time.Now()
+// startPlugin starts a local server on the pinned Thornwick packs and the
+// plugin's seq-mcp over stdio, initialised and ready for tool calls. It returns
+// the client, the plugin's data directory, the credential and a stop function.
+func startPlugin(t *testing.T, began time.Time) (*mcp, string, string, func()) {
 	root := repoRoot(t)
 	pin := pins(t, root)
 
@@ -335,6 +337,12 @@ func TestFirstContractInThornwick(t *testing.T) {
 		}
 	}
 	fmt.Fprintf(c.log, "tools/list: %s\n\n", strings.Join(c.tools, ", "))
+	return c, dataDir, string(secret), func() { once.Do(func() { in.Close(); _ = cmd.Wait() }) }
+}
+
+func TestFirstContractInThornwick(t *testing.T) {
+	began := time.Now()
+	c, dataDir, secret, stop := startPlugin(t, began)
 
 	// A new character walks to the board, takes the scout job, does it, hands it in.
 	c.call("new_character", obj{"name": "Aria", "class": "warrior"}, "Made Aria", "level 1 warrior", "Thornwick")
@@ -350,13 +358,13 @@ func TestFirstContractInThornwick(t *testing.T) {
 	if strings.Contains(look, "Contract:") {
 		t.Errorf("the handed-in contract is still shown:\n%s", look)
 	}
-	if got, ok := s.Character("aria"); !ok || got.Entity.Crowns < 8 {
+	if got, ok := c.s.Character("aria"); !ok || got.Entity.Crowns < 8 {
 		t.Errorf("the server's Aria has %d crowns, want at least 8", got.Entity.Crowns)
 	}
 	c.call("logout", obj{})
 
-	once.Do(func() { in.Close(); _ = cmd.Wait() })
-	checkSessionLog(t, filepath.Join(dataDir, "logs"), string(secret))
+	stop()
+	checkSessionLog(t, filepath.Join(dataDir, "logs"), secret)
 	took := time.Since(began)
 	if p := os.Getenv("FIRSTCONTRACT_TRANSCRIPT"); p != "" {
 		_ = os.WriteFile(p, []byte(c.log.String()), 0o644)
@@ -365,6 +373,52 @@ func TestFirstContractInThornwick(t *testing.T) {
 	t.Logf("first contract: %v", took.Round(time.Millisecond))
 	if took > 30*time.Second {
 		t.Errorf("took %v, over the 30 s budget", took)
+	}
+}
+
+// TestFirstStepsInThornwick: a new character is offered First Steps and walks
+// it as the play guide describes: greeter, own trainer (15 crowns), any board,
+// then through the east gate, which pays 20 xp on crossing (D62, D68).
+func TestFirstStepsInThornwick(t *testing.T) {
+	c, _, _, stop := startPlugin(t, time.Now())
+	defer stop()
+	c.call("new_character", obj{"name": "Bram", "class": "warrior"}, "Made Bram", "Thornwick")
+	c.call("look", obj{}, "Quest: First Steps, step 1 of 4")
+	c.call("quests", obj{}, "First Steps, step 1 of 4", "talk_to", "nothing in the game waits for it")
+	c.call("go_to", obj{"place": "the greeter"})
+	c.call("talk_to", obj{"npc": "the greeter"})
+	c.call("quests", obj{}, "step 2 of 4", "15 crowns")
+	c.call("go_to", obj{"place": "Gorran Stoutarm"})
+	c.call("talk_to", obj{"npc": "Gorran Stoutarm"})
+	c.call("quests", obj{}, "step 3 of 4", "take_contract")
+	if got, _ := c.s.Character("bram"); got.Entity.Crowns < 15 {
+		t.Errorf("Bram has %d crowns after the trainer step, want at least 15", got.Entity.Crowns)
+	}
+	c.call("go_to", obj{"place": "the contract board"}, "Contract Board")
+	c.call("take_contract", obj{"contract": "Word from Wickett Mill"}, "You take Word from Wickett Mill")
+	c.call("quests", obj{}, "step 4 of 4", "East Gate")
+	c.call("go_to", obj{"place": "east-gate"})
+	c.call("quests", obj{}, "step 4 of 4")
+	if got, _ := c.s.Character("bram"); got.Entity.XP != 0 {
+		t.Errorf("Bram has %d xp on reaching the gate, want 0 until he crosses", got.Entity.XP)
+	}
+	c.call("use_door", obj{"door": "east-gate"}, "Thornwick Downs")
+	c.call("quests", obj{}, "no quest chain")
+	if got, _ := c.s.Character("bram"); got.Entity.XP < 20 {
+		t.Errorf("Bram has %d xp after crossing, want at least 20", got.Entity.XP)
+	}
+}
+
+// TestDismissQuest: dismiss_quest ends the chain for good.
+func TestDismissQuest(t *testing.T) {
+	c, _, _, stop := startPlugin(t, time.Now())
+	defer stop()
+	c.call("new_character", obj{"name": "Cale", "class": "warrior"}, "Made Cale")
+	c.call("quests", obj{}, "First Steps")
+	c.call("dismiss_quest", obj{})
+	c.call("quests", obj{}, "no quest chain")
+	if look := c.call("look", obj{}); strings.Contains(look, "Quest:") {
+		t.Errorf("a dismissed chain is still shown:\n%s", look)
 	}
 }
 
