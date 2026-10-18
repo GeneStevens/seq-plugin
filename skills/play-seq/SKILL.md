@@ -64,6 +64,20 @@ the candidates and nothing happens; ask again with one of them.
 5. If you die, tell the player, then `release` to wake at the bind point.
    Do not go back to the same fight without asking.
 
+## Picking a fight
+
+`look` gives each creature a difficulty for your character: trivial, easy, even,
+hard or deadly. Read it before you attack, and tell the player when a fight looks
+hard or deadly. Pick fights only when the player asked for them; never start
+one on your own (a creature far below your level will not start one with you).
+
+- A hexer or shaman casting can be interrupted: use your interrupt, if you have one, while it casts.
+- A slinger shoots from range. Close in on it, or break its line of sight.
+- A shaman heals its friends. When two come together, kill the shaman first.
+- Some camps are linked in pairs: pulling one brings its partner.
+- Goblins and brigands may run at low health, and come back. Finish them if you
+  can, and watch for them returning.
+
 ## Quest chains
 
 A new character may be offered a short guided chain, First Steps in Thornwick:

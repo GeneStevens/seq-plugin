@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -406,6 +407,22 @@ func TestFirstStepsInThornwick(t *testing.T) {
 	c.call("quests", obj{}, "no quest chain")
 	if got, _ := c.s.Character("bram"); got.Entity.XP < 20 {
 		t.Errorf("Bram has %d xp after crossing, want at least 20", got.Entity.XP)
+	}
+}
+
+// TestLookShowsDifficulty: look through seq-mcp gives each mob in view a
+// difficulty band for the character (D70), which the play guide tells the agent
+// to read before picking a fight.
+func TestLookShowsDifficulty(t *testing.T) {
+	c, _, _, stop := startPlugin(t, time.Now())
+	defer stop()
+	c.call("new_character", obj{"name": "Cass", "class": "warrior"}, "Made Cass", "Thornwick")
+	c.call("use_door", obj{"door": "east-gate"}, "Thornwick Downs")
+	c.call("go_to", obj{"place": "the nearest meadow wolf"})
+	look := c.call("look", obj{})
+	band := regexp.MustCompile(`\(level \d+, (trivial|easy|even|hard|deadly), health \d+/\d+`)
+	if !band.MatchString(look) {
+		t.Errorf("look shows no mob with a difficulty band:\n%s", look)
 	}
 }
 

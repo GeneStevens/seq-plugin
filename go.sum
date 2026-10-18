@@ -1,7 +1,7 @@
 ergo.services/ergo v1.999.330 h1:9reLfSUoaAmg1ITcdTGGhJ9UXawQW+xR9yeqHbjsddE=
 ergo.services/ergo v1.999.330/go.mod h1:2WcCdXUIZvCfy9Kkac3Sx6V/tB23Mx3yK6xz77hRfbM=
-github.com/GeneStevens/seq v0.0.0-20261018012823-7050bc88f0bd h1:thK+vYciKLvYLOlYvUu29TS+dmjAT9Yb4tDPWXFSpVk=
-github.com/GeneStevens/seq v0.0.0-20261018012823-7050bc88f0bd/go.mod h1:TLEerv8+R6eDuLDq7O6ExpApGAmPcLWHpe/mJkPJQck=
+github.com/GeneStevens/seq v0.0.0-20261018153346-5a81f88ab31a h1:xqpN2r7jocC/8MjU+HlPW3LrScRJPHP685CDBegEF1I=
+github.com/GeneStevens/seq v0.0.0-20261018153346-5a81f88ab31a/go.mod h1:p4i0wU1T4qyfvjkfpMeGtGnEJvb2ZU2US3UDNZ3bvlE=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
 github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
