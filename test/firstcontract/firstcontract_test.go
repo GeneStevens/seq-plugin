@@ -200,7 +200,7 @@ func TestLauncherLogLocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	launch := func(env ...string) string {
-		return run(t, root, append([]string{"SEQ_PLUGIN_BIN_DIR=" + bin, "SEQ_LOG_DIR=", "SEQ_LOGGING=", "SEQ_CLIENT=", "CLAUDE_PLUGIN_DATA=", "XDG_DATA_HOME=", "HOME=/h"}, env...), filepath.Join(root, "scripts", "seq-mcp-run.sh"))
+		return run(t, root, append([]string{"SEQ_PLUGIN_BIN_DIR=" + bin, "SEQ_SERVER_URL=wss://x/seq/v1", "SEQ_CREDENTIAL_FILE=/dev/null", "SEQ_LOG_DIR=", "SEQ_LOGGING=", "SEQ_CLIENT=", "CLAUDE_PLUGIN_DATA=", "XDG_DATA_HOME=", "HOME=/h"}, env...), filepath.Join(root, "scripts", "seq-mcp-run.sh"))
 	}
 	for _, c := range []struct {
 		name string
@@ -365,5 +365,106 @@ func TestFirstContractInThornwick(t *testing.T) {
 	t.Logf("first contract: %v", took.Round(time.Millisecond))
 	if took > 30*time.Second {
 		t.Errorf("took %v, over the 30 s budget", took)
+	}
+}
+
+// TestLauncherCredentialFileNames: the credential file may be given as
+// SEQ_ACCOUNT_FILE (a name Gemini CLI does not strip) or SEQ_CREDENTIAL_FILE.
+func TestLauncherCredentialFileNames(t *testing.T) {
+	root := repoRoot(t)
+	pin := pins(t, root)
+	bin := t.TempDir()
+	fake := filepath.Join(bin, "seq-mcp-"+pin["SEQ_COMMIT"])
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\necho \"cred=${SEQ_CREDENTIAL_FILE-unset} account_file=${SEQ_ACCOUNT_FILE-unset}\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cred := filepath.Join(t.TempDir(), "credential")
+	other := filepath.Join(t.TempDir(), "other")
+	for _, p := range []string{cred, other} {
+		if err := os.WriteFile(p, []byte("x\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, c := range []struct {
+		name string
+		env  []string
+		want string
+	}{
+		{"new name", []string{"SEQ_ACCOUNT_FILE=" + cred}, "cred=" + cred + " account_file=unset"},
+		{"old name", []string{"SEQ_CREDENTIAL_FILE=" + cred}, "cred=" + cred + " account_file=unset"},
+		{"old name wins", []string{"SEQ_ACCOUNT_FILE=" + other, "SEQ_CREDENTIAL_FILE=" + cred}, "cred=" + cred + " account_file=unset"},
+		{"empty old name", []string{"SEQ_ACCOUNT_FILE=" + cred, "SEQ_CREDENTIAL_FILE="}, "cred=" + cred + " account_file=unset"},
+	} {
+		env := append([]string{"SEQ_PLUGIN_BIN_DIR=" + bin, "SEQ_SERVER_URL=wss://x/seq/v1", "SEQ_ACCOUNT_FILE=", "SEQ_CREDENTIAL_FILE=", "SEQ_AGENT_CREDENTIAL="}, c.env...)
+		if got := run(t, root, env, filepath.Join(root, "scripts", "seq-mcp-run.sh")); got != c.want {
+			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// TestLauncherNamesWhatIsMissing: with no server URL or no credential, the first
+// tool call, in any client, is answered with exactly which setting is missing and how
+// to set it for that client. The old message named SEQ_AGENT_CREDENTIAL, which a
+// player never sets.
+func TestLauncherNamesWhatIsMissing(t *testing.T) {
+	root := repoRoot(t)
+	cred := filepath.Join(t.TempDir(), "credential")
+	if err := os.WriteFile(cred, []byte("x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name   string
+		client string
+		env    []string
+		want   []string
+	}{
+		{"claude no url", "", []string{"SEQ_CREDENTIAL_FILE=" + cred}, []string{"SEQ_SERVER_URL", "/plugin configure seq@seq"}},
+		{"claude nothing", "", nil, []string{"SEQ_SERVER_URL", "SEQ_ACCOUNT_FILE", "/plugin configure seq@seq"}},
+		{"codex no credential", "codex", []string{"SEQ_SERVER_URL=wss://x/seq/v1"}, []string{"SEQ_ACCOUNT_FILE", "codex-install.sh"}},
+		{"gemini no credential", "gemini", []string{"SEQ_SERVER_URL=wss://x/seq/v1"}, []string{"SEQ_ACCOUNT_FILE", "gemini extensions config seq"}},
+		{"gemini no url", "gemini", []string{"SEQ_ACCOUNT_FILE=" + cred}, []string{"SEQ_SERVER_URL", "gemini extensions config seq"}},
+		{"unreadable credential file", "codex", []string{"SEQ_SERVER_URL=wss://x/seq/v1", "SEQ_CREDENTIAL_FILE=/no/such/file"}, []string{"/no/such/file", "credential file"}},
+	} {
+		cmd := exec.Command(filepath.Join(root, "scripts", "seq-mcp-run.sh"))
+		cmd.Env = append(os.Environ(), "SEQ_SERVER_URL=", "SEQ_ACCOUNT_FILE=", "SEQ_CREDENTIAL_FILE=", "SEQ_AGENT_CREDENTIAL=", "SEQ_CLIENT="+c.client)
+		cmd.Env = append(cmd.Env, c.env...)
+		cmd.Stdin = strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}` + "\n" +
+			`{"jsonrpc":"2.0","method":"notifications/initialized"}` + "\n" +
+			`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}` + "\n" +
+			`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"look","arguments":{}}}` + "\n")
+		var out, errb bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &out, &errb
+		if err := cmd.Run(); err != nil {
+			t.Errorf("%s: %v\n%s", c.name, err, errb.String())
+			continue
+		}
+		lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+		if len(lines) != 3 {
+			t.Errorf("%s: %d answers, want 3:\n%s", c.name, len(lines), out.String())
+			continue
+		}
+		var res struct {
+			ID     int
+			Result struct {
+				IsError bool
+				Content []struct{ Text string }
+			}
+		}
+		if err := json.Unmarshal([]byte(lines[2]), &res); err != nil || res.ID != 3 || !res.Result.IsError || len(res.Result.Content) == 0 {
+			t.Errorf("%s: the tool call was not answered with an error: %s (%v)", c.name, lines[2], err)
+			continue
+		}
+		text := res.Result.Content[0].Text
+		for _, w := range c.want {
+			if !strings.Contains(text, w) {
+				t.Errorf("%s: the message lacks %q: %s", c.name, w, text)
+			}
+		}
+		if strings.Contains(text, "SEQ_AGENT_CREDENTIAL") {
+			t.Errorf("%s: the message names SEQ_AGENT_CREDENTIAL: %s", c.name, text)
+		}
+		if !strings.Contains(errb.String(), "SEQ is not set up") {
+			t.Errorf("%s: nothing on stderr: %q", c.name, errb.String())
+		}
 	}
 }

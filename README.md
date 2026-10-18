@@ -1,6 +1,6 @@
 # seq-plugin
 
-Play SEQ (Spiel Engine Quest) from Claude Code, Codex CLI or Gemini CLI. SEQ is a multiplayer fantasy RPG
+Play SEQ (Spiel Engine Quest) from Claude Code, Codex CLI or Gemini CLI (experimental). SEQ is a multiplayer fantasy RPG
 with a server that keeps the world; you play by telling your AI client what to do
 ("make a warrior called Aria, take the wolf hunt, and finish it"), and the
 client plays your character through the game's tools. Release 1 is the **Thornwick
@@ -16,14 +16,16 @@ configuration, a how-to-play skill and a test.
 - The `seq` MCP server (`seq-mcp`), with tools to `look`, `go_to`, `talk_to`,
   `take_contract`, `attack`, `cast`, `loot`, `turn_in`, `use_door` and
   `release`, and to chat and party up with other players.
-- The `play-seq` guide (a skill in Claude Code and Codex, the context file in Gemini CLI), which teaches the model how to play and when to ask you
+- The `play-seq` guide (a skill in Claude Code and Codex, the context file in Gemini CLI, which is experimental), which teaches the model how to play and when to ask you
   first (spending crowns, trading, anything you can't take back).
 
 ## Choose your client
 
-SEQ works the same from **Claude Code**, **Codex CLI** and **Gemini CLI**: each
-runs the same `seq-mcp` server and teaches the model the same how-to-play guide
-(one source, `guide/PLAY.md`). Pick one; every path below is complete.
+SEQ works from **Claude Code** and **Codex CLI**, which are supported, and from
+**Gemini CLI**, which is **experimental** (see its section: it needs more setup,
+asks you to approve tools, and is slow in real time). Each runs the same `seq-mcp`
+server and teaches the model the same how-to-play guide (one source,
+`guide/PLAY.md`). Pick one; every path below is complete.
 
 All three need Go (to build `seq-mcp`), a clone of this repository, and **read
 access to the private `seq` repository on GitHub** from this machine: in M10
@@ -37,7 +39,7 @@ The four settings, for every client:
 | Setting | What |
 | --- | --- |
 | server URL | the server's gateway, like `wss://host:port/seq/v1` (required) |
-| credential file | a file only you can read, holding your `seq_ag_...` credential on one line (required) |
+| credential file | a file only you can read, holding your `seq_ag_...` credential on one line (required). Set as `SEQ_ACCOUNT_FILE`; the older name `SEQ_CREDENTIAL_FILE` works too, except in Gemini CLI, which hides it |
 | account | only if that file has several `account=credential` lines |
 | CA file | a PEM file for the server's certificate, if it uses a self-signed one |
 
@@ -107,31 +109,58 @@ entry points at your checkout, so keep the checkout where it is.
 Check: `codex mcp list` shows `seq` (enabled), `codex mcp get seq` its command and
 settings, and `codex plugin list` shows `seq@seq installed, enabled`. Then start
 `codex` and say: *"Play SEQ: make a warrior called Aria and look around."* (the
-`play-seq` skill is also reachable as `$play-seq`). Codex starts the server on
+`play-seq` skill is also reachable as `$play-seq`). The play guide tells Codex to
+keep your character logged in between your messages and to log out only when you
+ask; without it Codex logs out at the end of every turn, and each turn becomes a
+separate session. Codex starts the server on
 first use; the first start builds `seq-mcp`, so if the first call fails, run
 `scripts/install-seq-mcp.sh` once and start `codex` again.
 
-### Gemini CLI
+### Gemini CLI (experimental)
+
+Gemini CLI support is **experimental** (D67). It works, but expect rough edges:
+
+- Gemini asks you to approve each tool call. Choose "Allow all server tools for
+  this session" at the first prompt, or you will be asked on every move. (An
+  extension cannot mark its own server as trusted: Gemini ignores `trust` in an
+  extension's manifest.)
+- Use a Flash model (`gemini -m <a Flash model your account has>`). Quota and latency make real-time play slow: a fight can outrun the model,
+  and calls can take minutes between tools on Gemini's side (the seq tools answer in
+  well under a second). A free quota can run out mid-session.
 
 Gemini keeps its config in `~/.gemini` (under `HOME`; `GEMINI_CLI_HOME` moves it).
 This repository is a Gemini extension (`gemini-extension.json`, with the guide in
-`GEMINI.md`). Gemini starts the extension's server with your shell's environment,
-so export the four settings where you start `gemini`:
+`GEMINI.md`).
+
+**Gemini does not hand your shell's environment to the extension's server.** It
+removes any variable whose name contains `TOKEN`, `SECRET`, `PASSWORD`, `KEY`,
+`AUTH`, `CREDENTIAL`, `CERT` and a few others, so `SEQ_CREDENTIAL_FILE` never
+arrives (the server then looks "Connected" but cannot play). The extension avoids
+this in two ways:
+
+1. **Extension settings** (recommended). `gemini extensions link` or `install`
+   asks for the server URL, the credential file, the account (optional) and the
+   certificate file (optional), and Gemini passes them to the server. Change them
+   later with `gemini extensions config seq`.
+2. **Environment variables with names Gemini keeps:** `SEQ_SERVER_URL`,
+   `SEQ_ACCOUNT_FILE` (the credential file; not `SEQ_CREDENTIAL_FILE`),
+   `SEQ_ACCOUNT` and `SEQ_CA_FILE`, exported where you start `gemini`.
 
 ```sh
 gemini extensions link /path/to/seq-plugin     # or: gemini extensions install https://github.com/GeneStevens/seq-plugin
-export SEQ_SERVER_URL=wss://host:port/seq/v1
-export SEQ_CREDENTIAL_FILE=~/.seq-credential
-# optional: export SEQ_ACCOUNT=...  SEQ_CA_FILE=/path/to/cert.pem
-gemini
+# it asks for the settings above; or skip them and export:
+#   export SEQ_SERVER_URL=wss://host:port/seq/v1
+#   export SEQ_ACCOUNT_FILE=~/.seq-credential
+gemini -m <a Flash model>
 ```
 
-Add `--consent` to skip the install prompt. Check: `gemini extensions list` shows
-`seq` with its context file and server, and `gemini mcp list` (with the variables
-exported) shows `seq (from seq) ... Connected`. In a session, `/mcp` lists the
-tools. First prompt: *"Play SEQ: make a warrior called Aria and look around."*
-Run `scripts/install-seq-mcp.sh` once first so the build does not delay the
-connection.
+Add `--consent` to skip the install prompt. If a setting is missing, the first tool
+call says which one and how to set it. Check: `gemini extensions list` shows `seq`
+with its context file and server, and `gemini mcp list` shows `seq (from seq) ...
+Connected`; in a session, `/mcp` lists the tools. (`Connected` only means the server
+started; `make verify` makes a real call.) First prompt: *"Play SEQ: make a warrior
+called Aria and look around."* Run `scripts/install-seq-mcp.sh` once first so the
+build does not delay the connection.
 
 ## Your logs
 
@@ -161,7 +190,10 @@ subfolder of `seq/logs`; an unknown client (the launcher is told which one by
 **Replay one** in the SEQ terminal client: `seq-tui -replay
 ~/.local/share/seq/logs/<session folder>/record.jsonl` (add `-text` for plain text).
 
-**The server's log of your sessions.** Ask your AI client: *"List my SEQ sessions"*
+**The server's log of your sessions.** On the server it is one file per session,
+`<log dir>/sessions/<account>/<session id>.jsonl` (files written before SEQ-066
+have a leading underscore on both names, `sessions/_<account>/_<session id>.jsonl`,
+and are still read). Ask your AI client: *"List my SEQ sessions"*
 and *"Show me the log of this session"* or *"Why did I die?"*. It uses the
 `my_sessions` and `session_log` tools, which answer only for your own account; the
 log has what you asked for, the answers you were given, chat as shown, moves between
@@ -228,7 +260,10 @@ one in the file and restart the seq server in your client (`/mcp` in Claude Code
 the pins agree, the plugin manifest (`claude plugin validate`, if Claude Code is
 installed), that the guide copies match `guide/PLAY.md`, that Codex CLI and Gemini CLI
 (each skipped if not installed) accept the packaging in a throwaway config directory
-(`scripts/check-clients.sh`: no login, no chat) and then plays a first contract in Thornwick: a local server on the
+and each makes a real game call (`scripts/check-clients.sh`, `test/clients`: no login,
+no chat; a local server, the server started the way that client starts it, then
+`new_character`, `look` and `logout`, where `look` must answer "You are ..."; Gemini
+starts the server itself, so its variable redaction is part of the test) and then plays a first contract in Thornwick: a local server on the
 Thornwick packs, the plugin's own `seq-mcp` command over stdio, a new character
 who takes "Word from Wickett Mill", walks there, comes back and is paid, and the
 session's log files (one session id, no credential). The launcher's log locations are
@@ -245,6 +280,7 @@ gemini-extension.json, GEMINI.md  the Gemini extension and its generated context
 guide/PLAY.md                     the one source of the how-to-play guide
 mcp/seq.json                      the seq-mcp server (server, credential file and certificate from the options)
 scripts/                          build and start seq-mcp, Codex install, guide generator, local server, checks
+test/clients/                     the real game call through each installed client
 skills/play-seq/SKILL.md          the guide as a skill (generated)
 test/firstcontract/               the end-to-end test
 ```

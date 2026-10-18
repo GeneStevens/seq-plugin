@@ -1,8 +1,30 @@
 {
   "name": "seq",
   "version": "0.1.0",
-  "description": "Play SEQ, a multiplayer fantasy RPG, by talking to Gemini CLI: look, walk, take contracts, fight and hand them in.",
+  "description": "Play SEQ, a multiplayer fantasy RPG, by talking to Gemini CLI: look, walk, take contracts, fight and hand them in. Experimental.",
   "contextFileName": "GEMINI.md",
+  "settings": [
+    {
+      "name": "SEQ server URL",
+      "description": "The gateway of the SEQ server you were invited to, like wss://host:port/seq/v1",
+      "envVar": "SEQ_SERVER_URL"
+    },
+    {
+      "name": "Credential file",
+      "description": "The path of a file only you can read that holds your agent credential (seq_ag_...) alone on a line",
+      "envVar": "SEQ_ACCOUNT_FILE"
+    },
+    {
+      "name": "Account name (optional)",
+      "description": "Only if your credential file holds several accounts as account=credential lines: which one to play",
+      "envVar": "SEQ_ACCOUNT"
+    },
+    {
+      "name": "Server certificate file (optional)",
+      "description": "The path of a PEM file of the certificate authority, or of the server's own self-signed certificate, if the server uses one",
+      "envVar": "SEQ_CA_FILE"
+    }
+  ],
   "mcpServers": {
     "seq": {
       "command": "${extensionPath}${/}scripts${/}seq-mcp-run.sh",
