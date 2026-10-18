@@ -21,9 +21,12 @@ the candidates and nothing happens; ask again with one of them.
   `play_as` plays one the account already has.
 - `look` says where you are, what is near and what is fighting you.
 - `go_to` walks to a person, creature, door or place by name, anywhere in the
-  zone, in view or not. It does not cross zones: use `use_door` for a zone line.
+  zone, in view or not, standing people included. It does not cross zones, and
+  it does not find people in another zone: use `use_door` for a zone line.
 - `talk_to` talks to an NPC. `contracts` lists what you hold and what the board offers.
 - `take_contract`, `turn_in`, `attack`, `cast`, `loot`, `use_door`.
+- `quests` says which quest chain the character is on, if any, and its next step.
+  `dismiss_quest` gives the chain up for good.
 - `whats_attacking_me` says who is hitting you.
 - `release` brings you back after death. `logout` ends the session; use it
   only when the player asks you to (see "Stay in the world" below).
@@ -60,6 +63,21 @@ the candidates and nothing happens; ask again with one of them.
    whatever is attacking you. To back off, give a new `go_to` order.
 5. If you die, tell the player, then `release` to wake at the bind point.
    Do not go back to the same fight without asking.
+
+## Quest chains
+
+A new character may be offered a short guided chain, First Steps in Thornwick:
+speak to the Watch's greeter, visit the class trainer (this pays 15 crowns),
+take any contract from a board, then go out through the east gate (20 xp at the
+end). `look` shows the current step on a "Quest:" line and `quests` says more.
+
+It is a guide and nothing more. You may mention the next step to the player as
+an option; never push it or treat it as required. Do not follow a chain unless
+the player says to, and call `dismiss_quest` only when the player asks. Dismissed
+for good, it is not offered again.
+
+A "go out through" step is done by going through the door with `use_door`, not
+by standing beside it.
 
 ## Stay in the world
 
