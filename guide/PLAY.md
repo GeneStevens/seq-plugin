@@ -15,11 +15,13 @@ the candidates and nothing happens; ask again with one of them.
 - `new_character` (a name and a class) makes a character and enters the world.
   `play_as` plays one the account already has.
 - `look` says where you are, what is near and what is fighting you.
-- `go_to` walks to a person, creature, door or place.
+- `go_to` walks to a person, creature, door or place by name, anywhere in the
+  zone, in view or not. It does not cross zones: use `use_door` for a zone line.
 - `talk_to` talks to an NPC. `contracts` lists what you hold and what the board offers.
 - `take_contract`, `turn_in`, `attack`, `cast`, `loot`, `use_door`.
 - `whats_attacking_me` says who is hitting you.
-- `release` brings you back after death. `logout` ends the session.
+- `release` brings you back after death. `logout` ends the session; use it
+  only when the player asks you to (see "Stay in the world" below).
 - `session_log` gives the server's log of a session: the connection, each thing
   you asked for and the answer you were given, chat as shown, moves between
   zones, errors and the disconnect. With no session named it is this one.
@@ -31,6 +33,9 @@ the candidates and nothing happens; ask again with one of them.
    keeps running between your calls.
 2. Use `go_to` before `talk_to` or `attack` when something is far away. The
    tools walk for you, but walking first lets you see what is on the way.
+   `go_to` knows the zone's people and places by name even when they are out of
+   view ("the Thornwick Contract Board"), so you need not
+   find them first.
    A long walk answers after about 15 seconds with "Still walking to ...: 120 m
    to go. Ask again to keep going." That is not a failure: the character keeps
    walking. Ask again (the same call) until you arrive or are told why you
@@ -39,14 +44,26 @@ the candidates and nothing happens; ask again with one of them.
    on offer, tell the player the choices with their rewards, `take_contract`,
    do the work (hunts: `attack` the named creature and `loot` the drops;
    scouts: `go_to` the named place), `contracts` to check progress, then
-   `go_to` the board and `turn_in`.
+   `go_to` the board and `turn_in`. Any contract board takes any hand-in: you
+   need not go back to the board you took the contract from.
 4. A fight happens in real time. `attack` returns at once; `look` or
    `whats_attacking_me` shows how it is going. If health is low, stop
    fighting and say so rather than pressing on. `whats_attacking_me` also lists
    creatures that have picked you as their target and not struck yet; count them
-   as incoming.
+   as incoming. A fight stops your walk: if something hits you, you stop where
+   you are and the answer says so. An `attack` or `cast` with no target goes to
+   whatever is attacking you. To back off, give a new `go_to` order.
 5. If you die, tell the player, then `release` to wake at the bind point.
    Do not go back to the same fight without asking.
+
+## Stay in the world
+
+Your character stays in the world between the player's messages. Do not call
+`logout` at the end of a turn or when you have finished answering: it takes the
+character out of the world (even mid-fight) and ends the session, so every turn
+would become a separate session. Just stop and wait for the player's next message.
+Call `logout` only when the player asks you to; `play_as` brings the character
+back.
 
 ## What happened?
 

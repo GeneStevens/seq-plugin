@@ -1,12 +1,13 @@
 #!/bin/sh
 # Installs SEQ into Codex CLI: the how-to-play skill (as a plugin from this
 # checkout) and the seq MCP server. Reads the same four settings as the other
-# clients from the environment: SEQ_SERVER_URL and SEQ_CREDENTIAL_FILE (required),
+# clients from the environment: SEQ_SERVER_URL and SEQ_CREDENTIAL_FILE or SEQ_ACCOUNT_FILE (required),
 # SEQ_ACCOUNT and SEQ_CA_FILE (optional); SEQ_LOG_DIR (optional) moves the session
 # logs and SEQ_LOGGING=off turns them off (default ~/.local/share/seq/logs/codex). Only paths and the URL go into Codex's
 # config.toml, never the credential. Installs under CODEX_HOME (default ~/.codex).
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
+[ -n "${SEQ_CREDENTIAL_FILE:-}" ] || SEQ_CREDENTIAL_FILE=${SEQ_ACCOUNT_FILE:-}
 : "${SEQ_SERVER_URL:?set SEQ_SERVER_URL, like wss://host:port/seq/v1}"
 : "${SEQ_CREDENTIAL_FILE:?set SEQ_CREDENTIAL_FILE to a file holding your seq_ag_... credential}"
 codex plugin marketplace add "$root"
