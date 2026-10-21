@@ -11,7 +11,7 @@ trap 'rm -rf "$tmp"' EXIT
   cat <<'H'
 ---
 name: play-seq
-description: How to play SEQ, a multiplayer fantasy RPG, through the seq tools (look, go_to, take_contract, attack, loot, turn_in, release). Use when the player asks to play SEQ, make a character, take a contract, fight, or check what is going on in the game.
+description: How to play SEQ, a multiplayer fantasy RPG, through the seq tools (look, go_to, take_contract, attack, loot, turn_in, release, party, chat). Use when the player asks to play SEQ, make a character, take a contract, fight, play with friends, or check what is going on in the game.
 ---
 
 H
