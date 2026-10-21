@@ -15,7 +15,8 @@ configuration, a how-to-play skill and a test.
 
 - The `seq` MCP server (`seq-mcp`), with tools to `look`, `go_to`, `talk_to`,
   `take_contract`, `attack`, `cast`, `loot`, `turn_in`, `use_door` and
-  `release`, and to chat and party up with other players.
+  `release`, to see your characters (`list_characters`), and to play with friends:
+  `party`, `chat`, `inbox`, `who`, `friends` and `mute`.
 - The `play-seq` guide (a skill in Claude Code and Codex, the context file in Gemini CLI, which is experimental), which teaches the model how to play and when to ask you
   first (spending crowns, trading, anything you can't take back).
 
@@ -271,7 +272,9 @@ starts the server itself, so its variable redaction is part of the test) and the
 Thornwick packs, the plugin's own `seq-mcp` command over stdio, a new character
 who takes "Word from Wickett Mill", walks there, comes back and is paid, and the
 session's log files (one session id, no credential). A second test walks a new
-character through First Steps, and another dismisses it. The launcher's log locations are
+character through First Steps, and another dismisses it. A social test runs two
+plugin processes on two accounts: they party up, talk in party and tell chat, and
+both show in `who`. The launcher's log locations are
 checked too. It takes a
 few seconds and fetches nothing but the pinned modules.
 

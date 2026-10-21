@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -236,30 +237,47 @@ func TestLauncherLogLocation(t *testing.T) {
 // plugin's seq-mcp over stdio, initialised and ready for tool calls. It returns
 // the client, the plugin's data directory, the credential and a stop function.
 func startPlugin(t *testing.T, began time.Time) (*mcp, string, string, func()) {
+	binDir := buildPlugin(t, began)
+	s := startServer(t, testserver.Account{Name: "ann", Characters: []string{"c1"}})
+	return launchPlugin(t, s, binDir, "ann", "c1")
+}
+
+// buildPlugin builds seq-mcp at the pinned seq commit, as the plugin does, and
+// returns the directory it is in.
+func buildPlugin(t *testing.T, began time.Time) string {
 	root := repoRoot(t)
 	pin := pins(t, root)
-
-	// The plugin builds seq-mcp from source at the pinned commit.
 	binDir := t.TempDir()
 	built := run(t, root, []string{"SEQ_PLUGIN_BIN_DIR=" + binDir}, filepath.Join(root, "scripts", "install-seq-mcp.sh"))
 	t.Logf("seq-mcp built at %s in %v", pin["SEQ_COMMIT"][:12], time.Since(began).Round(time.Millisecond))
 	if !strings.HasPrefix(built, binDir) {
 		t.Fatalf("the install script wrote %q, not under %s", built, binDir)
 	}
+	return binDir
+}
 
-	s := testserver.Start(t, testserver.Options{
-		Packs:    []string{worldPacks(t, root, pin)},
+// startServer starts a local server on the pinned Thornwick packs.
+func startServer(t *testing.T, accounts ...testserver.Account) *testserver.Server {
+	root := repoRoot(t)
+	return testserver.Start(t, testserver.Options{
+		Packs:    []string{worldPacks(t, root, pins(t, root))},
 		Zones:    []string{"thornwick", "thornwick-downs"},
-		Accounts: []testserver.Account{{Name: "ann", Characters: []string{"c1"}}},
+		Accounts: accounts,
 	})
+}
+
+// launchPlugin runs the plugin's seq-mcp command for one account of s, over
+// stdio, initialised and ready for tool calls.
+func launchPlugin(t *testing.T, s *testserver.Server, binDir, account, char string) (*mcp, string, string, func()) {
+	root := repoRoot(t)
 
 	// What a player holds: a credential file, and the server's certificate.
 	dir := t.TempDir()
 	credFile := filepath.Join(dir, "credential")
-	if err := os.WriteFile(credFile, []byte(s.AgentSecret("ann", "c1")+"\n"), 0o600); err != nil {
+	if err := os.WriteFile(credFile, []byte(s.AgentSecret(account, char)+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	secret := s.AgentSecret("ann", "c1")
+	secret := s.AgentSecret(account, char)
 	cert := serverCert(t, s.URL())
 	caFile := filepath.Join(dir, "server.pem")
 	if err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert}), 0o600); err != nil {
@@ -347,7 +365,7 @@ func TestFirstContractInThornwick(t *testing.T) {
 
 	// A new character walks to the board, takes the scout job, does it, hands it in.
 	c.call("new_character", obj{"name": "Aria", "class": "warrior"}, "Made Aria", "level 1 warrior", "Thornwick")
-	c.call("contracts", obj{}, "You hold no contracts", "Word from Wickett Mill")
+	c.call("contracts", obj{}, "You hold no contracts", "Word from Wickett Mill", "of 3 contracts this hour")
 	c.call("go_to", obj{"place": "the contract board"}, "Contract Board")
 	c.call("take_contract", obj{"contract": "Word from Wickett Mill"}, "You take Word from Wickett Mill")
 	c.call("use_door", obj{"door": "east-gate"}, "Thornwick Downs", "scout 0/1")
@@ -437,6 +455,52 @@ func TestDismissQuest(t *testing.T) {
 	if look := c.call("look", obj{}); strings.Contains(look, "Quest:") {
 		t.Errorf("a dismissed chain is still shown:\n%s", look)
 	}
+}
+
+// TestPlayingWithFriends: two players on two accounts, each through their own
+// plugin process, party up, talk in party chat and see each other in who, as the
+// play guide's "Playing with friends" section describes.
+func TestPlayingWithFriends(t *testing.T) {
+	binDir := buildPlugin(t, time.Now())
+	s := startServer(t,
+		testserver.Account{Name: "ann", Characters: []string{"c1"}},
+		testserver.Account{Name: "bob", Characters: []string{"c2"}})
+	ann, _, _, stopAnn := launchPlugin(t, s, binDir, "ann", "c1")
+	defer stopAnn()
+	bob, _, _, stopBob := launchPlugin(t, s, binDir, "bob", "c2")
+	defer stopBob()
+	for _, tool := range []string{"chat", "party", "who", "friends", "mute", "inbox", "list_characters", "act"} {
+		if !slices.Contains(ann.tools, tool) {
+			t.Errorf("tools/list lacks %s: %v", tool, ann.tools)
+		}
+	}
+	ann.call("new_character", obj{"name": "Aria", "class": "warrior"}, "Made Aria", "Thornwick")
+	bob.call("new_character", obj{"name": "Bram", "class": "cleric"}, "Made Bram", "Thornwick")
+	ann.call("list_characters", obj{}, "Aria")
+
+	ann.call("party", obj{"action": "invite", "name": "Bram"})
+	bob.call("inbox", obj{}, "Aria")
+	bob.call("party", obj{"action": "accept"})
+	ann.call("inbox", obj{}, "Bram joined the party")
+	ann.call("party", obj{"action": "list"}, "Aria", "Bram")
+
+	ann.call("chat", obj{"channel": "party", "text": "ready for the wolves?"})
+	bob.call("inbox", obj{}, "ready for the wolves?")
+	bob.call("chat", obj{"channel": "tell", "to": "Aria", "text": "meet me at the board"})
+	ann.call("inbox", obj{}, "meet me at the board")
+
+	who := ann.call("who", obj{}, "Aria", "Bram")
+	if !strings.Contains(bob.call("who", obj{}), "Aria") {
+		t.Errorf("who, from Bram, does not list Aria; Aria's own saw:\n%s", who)
+	}
+	ann.call("friends", obj{"action": "add", "name": "Bram"})
+	ann.call("friends", obj{"action": "list"}, "Bram")
+	bob.call("mute", obj{"action": "mute", "name": "Aria"})
+	bob.call("mute", obj{"action": "list"}, "Aria")
+	bob.call("mute", obj{"action": "unmute", "name": "Aria"})
+	bob.call("party", obj{"action": "leave"})
+	ann.call("logout", obj{})
+	bob.call("logout", obj{})
 }
 
 // TestLauncherCredentialFileNames: the credential file may be given as
