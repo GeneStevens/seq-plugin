@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -90,7 +91,8 @@ func (c *mcp) rpc(method string, params any) json.RawMessage {
 	stop, done := make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(done)
-		for {
+		for c.s != nil { // a real seqd keeps its own time
+
 			select {
 			case <-stop:
 				return
@@ -269,16 +271,22 @@ func startServer(t *testing.T, accounts ...testserver.Account) *testserver.Serve
 // launchPlugin runs the plugin's seq-mcp command for one account of s, over
 // stdio, initialised and ready for tool calls.
 func launchPlugin(t *testing.T, s *testserver.Server, binDir, account, char string) (*mcp, string, string, func()) {
+	return launchPluginAt(t, s, s.URL(), s.AgentSecret(account, char), binDir)
+}
+
+// launchPluginAt is launchPlugin for a server at url that the player holds
+// secret for. s is the test server whose clock the test moves, or nil for a
+// real seqd, which keeps its own time.
+func launchPluginAt(t *testing.T, s *testserver.Server, url, secret, binDir string) (*mcp, string, string, func()) {
 	root := repoRoot(t)
 
 	// What a player holds: a credential file, and the server's certificate.
 	dir := t.TempDir()
 	credFile := filepath.Join(dir, "credential")
-	if err := os.WriteFile(credFile, []byte(s.AgentSecret(account, char)+"\n"), 0o600); err != nil {
+	if err := os.WriteFile(credFile, []byte(secret+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	secret := s.AgentSecret(account, char)
-	cert := serverCert(t, s.URL())
+	cert := serverCert(t, url)
 	caFile := filepath.Join(dir, "server.pem")
 	if err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert}), 0o600); err != nil {
 		t.Fatal(err)
@@ -292,7 +300,7 @@ func launchPlugin(t *testing.T, s *testserver.Server, binDir, account, char stri
 	}
 	subst := strings.NewReplacer(
 		"${CLAUDE_PLUGIN_ROOT}", root,
-		"${user_config.server_url}", s.URL(),
+		"${user_config.server_url}", url,
 		"${user_config.credential_file}", credFile,
 		"${user_config.account}", "",
 		"${user_config.ca_file}", caFile,
@@ -602,4 +610,103 @@ func TestLauncherNamesWhatIsMissing(t *testing.T) {
 			t.Errorf("%s: nothing on stderr: %q", c.name, errb.String())
 		}
 	}
+}
+
+// TestServerAnnouncementReachesToolResult: the one smoke test that a game
+// master's announcement gets through the real stack. seqd and seqgm are built
+// at the pinned seq commit (the testserver has no game master service); seqgm
+// announces, and the next tool result of the plugin's seq-mcp starts with it,
+// once. How each kind of word is shown is seq-mcp's own table test.
+func TestServerAnnouncementReachesToolResult(t *testing.T) {
+	root := repoRoot(t)
+	pin := pins(t, root)
+	binDir := buildPlugin(t, time.Now())
+	tools := t.TempDir()
+	run(t, root, []string{"GOBIN=" + tools, "GOPRIVATE=github.com/GeneStevens/*"}, "go", "install",
+		pin["SEQ_MODULE"]+"/cmd/seqd@"+pin["SEQ_COMMIT"], pin["SEQ_MODULE"]+"/cmd/seqgm@"+pin["SEQ_COMMIT"])
+
+	// seqd on a free loopback port, with a development account, its agent
+	// credential and a game master token (printed once).
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	ln.Close()
+	gmLn, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gmAddr := gmLn.Addr().String()
+	gmLn.Close()
+	logDir := t.TempDir()
+	cmd := exec.Command(filepath.Join(tools, "seqd"), "-listen", addr, "-packs", worldPacks(t, root, pin),
+		"-dev-account", "me", "-dev-agent", "claude", "-gm-addr", gmAddr, "-gm-dev-token", "tester", "-log-dir", logDir)
+	var out lockedBuffer
+	cmd.Stdout, cmd.Stderr = &out, &out
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = cmd.Process.Kill(); _ = cmd.Wait() })
+	var cred, gmToken string
+	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+		text := out.String()
+		if m := regexp.MustCompile(`(?m)^agent credential claude for [^:]*: (\S+)$`).FindStringSubmatch(text); m != nil {
+			cred = m[1]
+		}
+		if m := regexp.MustCompile(`(?m)^GM token for tester: (\S+)$`).FindStringSubmatch(text); m != nil {
+			gmToken = m[1]
+		}
+		if cred != "" && gmToken != "" && strings.Contains(text, "gm endpoint:") {
+			break
+		}
+	}
+	if cred == "" || gmToken == "" {
+		t.Fatalf("seqd did not print its credentials:\n%s", out.String())
+	}
+
+	c, _, _, stop := launchPluginAt(t, nil, "wss://"+addr+"/seq/v1", cred, binDir)
+	defer stop()
+	c.call("play_as", obj{"character": "me-1"})
+
+	tokenFile := filepath.Join(t.TempDir(), "gm.token")
+	if err := os.WriteFile(tokenFile, []byte(gmToken+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	run(t, root, nil, filepath.Join(tools, "seqgm"), "-url", "http://"+gmAddr, "-token-file", tokenFile,
+		"announce", "The server restarts soon.", "-reason", "plugin smoke")
+
+	// The announcement is on its way over the socket: the next result that
+	// follows it starts with it.
+	var text string
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(100 * time.Millisecond) {
+		text = c.call("look", obj{})
+		if strings.HasPrefix(text, "Server announcement:") {
+			break
+		}
+	}
+	if !strings.HasPrefix(text, "Server announcement: The server restarts soon.\n") {
+		t.Fatalf("no result started with the announcement; the last was:\n%s", text)
+	}
+	if again := c.call("look", obj{}); strings.Contains(again, "announcement") {
+		t.Errorf("the announcement was shown twice:\n%s", again)
+	}
+}
+
+// lockedBuffer is a bytes.Buffer a process writes while the test reads.
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.String()
 }
