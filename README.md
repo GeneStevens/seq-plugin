@@ -84,14 +84,6 @@ A new character in Thornwick is offered First Steps, a short guided walk (the
 greeter, your class trainer, a contract board, the east gate). It is only a guide:
 ask the agent to skip it, and it uses `dismiss_quest` to end it for good.
 
-Longer quest chains (for example Barleycross, which starts with the greeter and
-goes on with Goodman Hatch in the Downs) are followed on request. The agent reads
-`quests` for the current step, `observe` for what each person offers and why a
-quest is locked (a level, or a quest to finish first), takes an offer by talking
-to its giver, and does each kind of step: talk, go to a place, take a door to
-another zone, watch a place for a time without fighting, kill, collect and
-deliver. Quest items cannot be sold or traded, and the agent knows it.
-
 The first start builds `seq-mcp` from source (kept in the plugin's data
 directory, one binary per pinned commit), which takes a while; Claude Code may
 show the server as failed until it finishes, and `/mcp` then reconnects it.
@@ -280,10 +272,7 @@ starts the server itself, so its variable redaction is part of the test) and the
 Thornwick packs, the plugin's own `seq-mcp` command over stdio, a new character
 who takes "Word from Wickett Mill", walks there, comes back and is paid, and the
 session's log files (one session id, no credential). A second test walks a new
-character through First Steps, and another dismisses it. A quest test plays the
-guide's own calls for the first two Barleycross quests (word to Goodman Hatch,
-then the 45 second granary watch) as a scripted session, not a model, and a
-check keeps the guide free of the world's secret lore. A social test runs two
+character through First Steps, and another dismisses it. A social test runs two
 plugin processes on two accounts: they party up, talk in party and tell chat, and
 both show in `who`. The launcher's log locations are
 checked too. It takes a
