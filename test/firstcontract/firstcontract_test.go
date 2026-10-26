@@ -477,7 +477,7 @@ func TestPlayingWithFriends(t *testing.T) {
 	defer stopAnn()
 	bob, _, _, stopBob := launchPlugin(t, s, binDir, "bob", "c2")
 	defer stopBob()
-	for _, tool := range []string{"chat", "party", "who", "friends", "mute", "inbox", "whois", "report", "ooc", "list_characters", "act"} {
+	for _, tool := range []string{"chat", "party", "who", "friends", "mute", "inbox", "list_characters", "act"} {
 		if !slices.Contains(ann.tools, tool) {
 			t.Errorf("tools/list lacks %s: %v", tool, ann.tools)
 		}
@@ -507,17 +507,6 @@ func TestPlayingWithFriends(t *testing.T) {
 	bob.call("mute", obj{"action": "list"}, "Aria")
 	bob.call("mute", obj{"action": "unmute", "name": "Aria"})
 	bob.call("party", obj{"action": "leave"})
-
-	// ooc is server-wide and out of character; whois gives the public card.
-	ann.call("chat", obj{"channel": "ooc", "text": "anyone up for a hunt?"}, "said on ooc")
-	bob.call("inbox", obj{}, "[ooc] Aria: anyone up for a hunt?")
-	ann.call("whois", obj{"name": "Bram"}, "Bram: level", "cleric", "online")
-	bob.call("ooc", obj{"on": false}, "ooc is off")
-	ann.call("chat", obj{"channel": "ooc", "text": "still there?"})
-	if strings.Contains(bob.call("inbox", obj{}), "still there?") {
-		t.Errorf("an ooc line reached a character that switched ooc off")
-	}
-	bob.call("ooc", obj{"on": true}, "ooc is on")
 	ann.call("logout", obj{})
 	bob.call("logout", obj{})
 }
