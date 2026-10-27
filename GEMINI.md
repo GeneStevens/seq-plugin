@@ -68,6 +68,8 @@ the candidates and nothing happens; ask again with one of them.
    start swinging, and when it dies you turn to the next creature still attacking
    you. It does not start fights, and it keeps a target you chose yourself. A
    player who wants it off asks for it: `act` with `auto_retaliate` and `on` false.
+   A fight announces itself once: you see one "You start attacking …" line when
+   you begin, not one per swing or per re-target. Do not read a repeat as a new fight.
 5. If you die, tell the player, then `release` to wake at the bind point.
    Do not go back to the same fight without asking.
 
@@ -113,6 +115,9 @@ offers the first, and each next one is offered when the one before is done. A ne
 character may be offered a short guided chain, First Steps in Thornwick: speak to
 the Watch's greeter, visit the class trainer (this pays 15 crowns), take any
 contract from a board, then go out through the east gate (20 xp at the end).
+
+Offers and locked offers show in `observe` in every zone, including a chain
+that runs wholly inside one zone (the Downs have their own).
 
 Chains are optional. You may mention the next step to the player as an option;
 never push it or treat it as required. Do not follow a chain unless the player
@@ -211,6 +216,13 @@ not, and its zone unless it is hidden. It shows no more than `who` does.
 read it later; nobody tells you what comes of it. File one only when the player
 asks you to report someone, never on your own judgment, and give their reason in
 a sentence or two. The server attaches the latest chat lines of both characters.
+
+The server limits reports: about 5 an hour and 20 a day per account, and 10 open
+at once. Past a limit you get a notice ("You've filed several reports recently.
+A GM will review them.") and nothing is filed; do not retry. A second report of
+the same character within a day is not filed again: the answer says "You have
+already reported …" and your reason is added to the open report. Pass that on
+to the player; it is not an error.
 
 While a fight is on, chat is not shown line by line. The first result after the
 fight starts with one line, `While you fought: …`, saying how many lines came in,
