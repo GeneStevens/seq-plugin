@@ -1,6 +1,7 @@
 package firstcontract
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -48,6 +49,10 @@ func TestDraughtVaultAndPuntThroughTheTools(t *testing.T) {
 	d.call("play_as", obj{"character": "c2"})
 	d.call("observe", obj{}, "nells-punt", "to-eelmere")
 	d.call("act", obj{"intent": "travel", "npc": "nells-punt", "route": "to-eelmere"})
+	// SEQ-193: a ferry trip is told as travel, never as a death's respawn.
+	if ev := d.call("recent_events", obj{}, "traveled: You sail with Nell's Punt to Eelmere"); strings.Contains(ev, "respawned") {
+		t.Errorf("the punt was told as a respawn:\n%s", ev)
+	}
 	if got, _ := d.s.Character("c2"); got.Entity.Crowns != 15 || got.Entity.Pos.Y < 400000 {
 		t.Errorf("after the punt: %d crowns at y=%d, want 15 at Eelmere", got.Entity.Crowns, got.Entity.Pos.Y)
 	}

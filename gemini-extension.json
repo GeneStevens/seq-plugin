@@ -28,7 +28,8 @@
   "mcpServers": {
     "seq": {
       "command": "${extensionPath}${/}scripts${/}seq-mcp-run.sh",
-      "env": { "SEQ_CLIENT": "gemini" }
+      "env": { "SEQ_CLIENT": "gemini" },
+      "timeout": 120000
     }
   }
 }

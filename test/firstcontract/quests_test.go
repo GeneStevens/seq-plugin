@@ -65,6 +65,14 @@ func TestBarleycrossChainThroughTheTools(t *testing.T) {
 		t.Errorf("the watch paid before its 45 s: %d xp", ch.Entity.XP)
 	}
 	c.s.Advance(30 * time.Second)
+	// The server settles the step on its own tick; under a loaded host that can
+	// trail Advance, and the pay can show before the quest state the tool reads.
+	// Wait on what the assertion checks: the tool no longer showing the step.
+	for end := time.Now().Add(15 * time.Second); time.Now().Before(end); time.Sleep(50 * time.Millisecond) {
+		if strings.Contains(c.call("quests", obj{}), "no quest chain") {
+			break
+		}
+	}
 	c.call("quests", obj{}, "no quest chain")
 	if got, _ := c.s.Character("c1"); got.Entity.Crowns != 18 || got.Entity.XP != 8 {
 		t.Errorf("after Watch the Granary: %d crowns and %d xp, want 18 and 8", got.Entity.Crowns, got.Entity.XP)
