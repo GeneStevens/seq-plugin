@@ -196,7 +196,11 @@ prices, and every answer says accepted or why not.
 - Ferry: Nell's Punt on the east bank in the Downs takes you to Eelmere for 10
   crowns: `go_to` it, then `act` with intent `travel`, `npc` and `route`
   (`observe` lists the routes). Not while fighting. It saves a long walk past
-  brigands; say the fee and the destination first.
+  brigands; say the fee and the destination first. The trip shows in
+  `recent_events` as `traveled` (you sail, you do not die or respawn). If the
+  ferry "can't cross right now" (`ferry_down`) no fare is taken, and if it fails
+  after the fare was paid, a `refund` event says "your fare is returned"; the
+  crowns are back in `observe`. Try again later.
 - Selling: a vendor pays only a share of the price, 25% for Common and Fine
   items and 10% for Rare and Named ones. Rare and Named items sell for little,
   so keep them to wear or to bank; they are bound to the character and cannot be
