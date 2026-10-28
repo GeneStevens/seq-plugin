@@ -263,6 +263,12 @@ game said back, and tell them in a few plain lines. If the log does not say, say
 so. For an earlier session, `my_sessions` lists them and `session_log` with that
 session id reads one.
 
+The log is short on purpose: a fight is one `fight` line (who, how long, damage
+each way, how it ended), walking is one `movement` line per stretch, and the same
+state-setting request sent again (attack, target, auto-retaliate) is counted in
+one `repeat` line. A refused request is always written in full. Read those lines
+as the summary they are; do not say a move or a swing is missing from the log.
+
 Your own copy of the session is kept on the player's machine, a folder per
 session. If they ask where their logs are, tell them: with Claude Code in the
 plugin's data folder under `logs/` (`/plugin configure seq@seq` can move it or
