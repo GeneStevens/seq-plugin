@@ -29,8 +29,9 @@ the candidates and nothing happens; ask again with one of them.
 - `whats_attacking_me` says who is hitting you.
 - For other players: `party`, `chat`, `inbox`, `who`, `whois`, `ooc`, `report`,
   `friends`, `mute`, `status` (see "Playing with friends").
-- `act` is the low-level tool. You need it for one thing: `act` with intent
-  `auto_retaliate` and `on` true or false (see "Picking a fight").
+- `act` is the low-level tool. You need it for `auto_retaliate` (`on` true or
+  false; see "Picking a fight") and for the shop, vault and ferry intents `buy`,
+  `sell`, `use_item`, `bank_expand` and `travel` (see "Spending crowns").
 - `release` brings you back after death. `logout` ends the session; use it
   only when the player asks you to (see "Stay in the world" below).
 - `session_log` gives the server's log of a session: the connection, each thing
@@ -172,6 +173,34 @@ stop, then say what happened, what it paid and what the next quest wants. Quests
 have levels: say so when the character is too low rather than grinding for it.
 A quest chain is public story, not a secret: only say what the game and its
 people have said to you, and do not guess at or invent what is behind it.
+
+## Spending crowns
+
+Crowns buy things that make play easier. Spend them only as in "Ask the player
+first", but offer these when they fit. Walk to the person with `go_to`, then
+`act`; `observe` lists the people in reach with their ids, what they sell and the
+prices, and every answer says accepted or why not.
+
+- Use an item: `act` with intent `use_item` and `item` (an id from `observe`).
+  Food and ale (Barnaby Tuck's general goods) speed up health and mana regeneration
+  for a while, out of a fight only, so eat or drink after a fight instead of
+  waiting to rest: a loaf and an ale go together. Hearth draughts (the binder,
+  Isolde Fenn) heal at once, in a fight too, one a minute. Carrying a few is
+  cheap insurance when health is low and you cannot get away. A refusal says
+  why (still in a fight, still cooling down).
+- Buy: `act` with intent `buy`, `npc` (the id), `item` and `count`.
+- Vault space: the banker (Odalys Penn, Thornwick) sells three tiers of extra
+  bank slots, in order, once each (20 for 100 crowns, 20 for 250, 40 for 500):
+  `act` with intent `bank_expand` and `npc`. Worth it when the bags are full of
+  things the player wants to keep; not worth it early.
+- Ferry: Nell's Punt on the east bank in the Downs takes you to Eelmere for 10
+  crowns: `go_to` it, then `act` with intent `travel`, `npc` and `route`
+  (`observe` lists the routes). Not while fighting. It saves a long walk past
+  brigands; say the fee and the destination first.
+- Selling: a vendor pays only a share of the price, 25% for Common and Fine
+  items and 10% for Rare and Named ones. Rare and Named items sell for little,
+  so keep them to wear or to bank; they are bound to the character and cannot be
+  traded. Do not sell one without asking.
 
 ## Playing with friends
 

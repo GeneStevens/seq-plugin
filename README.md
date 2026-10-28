@@ -16,7 +16,8 @@ configuration, a how-to-play skill and a test.
 - The `seq` MCP server (`seq-mcp`), with tools to `look`, `go_to`, `talk_to`,
   `take_contract`, `attack`, `cast`, `loot`, `turn_in`, `use_door` and
   `release`, to see your characters (`list_characters`), and to play with friends:
-  `party`, `chat`, `inbox`, `who`, `friends` and `mute`.
+  `party`, `chat`, `inbox`, `who`, `friends` and `mute`. `act` covers the shops: use an
+  item, buy vault space, take a ferry.
 - The `play-seq` guide (a skill in Claude Code and Codex, the context file in Gemini CLI, which is experimental), which teaches the model how to play and when to ask you
   first (spending crowns, trading, anything you can't take back).
 
@@ -282,7 +283,7 @@ who takes "Word from Wickett Mill", walks there, comes back and is paid, and the
 session's log files (one session id, no credential). A second test walks a new
 character through First Steps, and another dismisses it. A quest test plays the
 guide's own calls for the first two Barleycross quests (word to Goodman Hatch,
-then the 45 second granary watch) as a scripted session, not a model, and a
+then the 45 second granary watch) as a scripted session, not a model, and another buys and uses a healing draught, buys a vault tier and takes Nell's punt, and a
 check keeps the guide free of the world's secret lore. A social test runs two
 plugin processes on two accounts: they party up, talk in party and tell chat, and
 both show in `who`. The launcher's log locations are
