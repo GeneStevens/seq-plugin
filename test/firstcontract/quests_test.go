@@ -45,8 +45,8 @@ func TestBarleycrossChainThroughTheTools(t *testing.T) {
 		`"Raiders' Spoil", not yet offered (Reach level 5)`)
 	c.call("talk_to", obj{"npc": "Tobias Hatch"})
 	c.call("quests", obj{}, "no quest chain")
-	if got, _ := c.s.Character("c1"); got.Entity.Crowns != 8 || got.Entity.XP != 5 {
-		t.Errorf("after Word to Barleycross: %d crowns and %d xp, want 8 and 5", got.Entity.Crowns, got.Entity.XP)
+	if got, _ := c.s.Character("c1"); got.Entity.Crowns != 8 || got.Entity.XP != 15 {
+		t.Errorf("after Word to Barleycross: %d crowns and %d xp, want 8 and 15", got.Entity.Crowns, got.Entity.XP)
 	}
 
 	// The watch: take it, walk to the place, stay put out of a fight until the
@@ -61,13 +61,13 @@ func TestBarleycrossChainThroughTheTools(t *testing.T) {
 	// is still on after 20 s, and done, by itself, after 45 (the chain's one step).
 	c.s.Advance(20 * time.Second)
 	c.call("quests", obj{}, "Watch the Granary", "stay near Barleycross for 45 s")
-	if ch, _ := c.s.Character("c1"); ch.Entity.XP != 5 {
+	if ch, _ := c.s.Character("c1"); ch.Entity.XP != 15 {
 		t.Errorf("the watch paid before its 45 s: %d xp", ch.Entity.XP)
 	}
 	c.s.Advance(30 * time.Second)
 	c.call("quests", obj{}, "no quest chain")
-	if got, _ := c.s.Character("c1"); got.Entity.Crowns != 18 || got.Entity.XP != 8 {
-		t.Errorf("after Watch the Granary: %d crowns and %d xp, want 18 and 8", got.Entity.Crowns, got.Entity.XP)
+	if got, _ := c.s.Character("c1"); got.Entity.Crowns != 18 || got.Entity.XP != 35 {
+		t.Errorf("after Watch the Granary: %d crowns and %d xp, want 18 and 35", got.Entity.Crowns, got.Entity.XP)
 	}
 	// The next quest is still locked by level, and the tool says so.
 	c.call("observe", obj{}, `"Raiders' Spoil", not yet offered (Reach level 5)`)
