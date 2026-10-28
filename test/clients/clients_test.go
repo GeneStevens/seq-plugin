@@ -373,7 +373,7 @@ func (f *fixture) gemini(t *testing.T, root string) {
 	}
 
 	t.Run("manifest settings", func(t *testing.T) {
-		env := report(t, root, home)
+		env := report(t, root, home, "SEQ_PLUGIN_BIN_DIR="+f.bin)
 		for _, k := range []string{"SEQ_SERVER_URL", "SEQ_CREDENTIAL_FILE", "SEQ_CA_FILE"} {
 			if !has(env, k) {
 				t.Fatalf("gemini started the server without %s: %v", k, env)
@@ -388,7 +388,7 @@ func (f *fixture) gemini(t *testing.T, root string) {
 	t.Cleanup(func() { _ = os.WriteFile(envFile, settings, 0o600) })
 
 	t.Run("exported variables", func(t *testing.T) {
-		env := report(t, root, home, "SEQ_SERVER_URL="+f.url, "SEQ_ACCOUNT_FILE="+f.credFile, "SEQ_CA_FILE="+f.caFile)
+		env := report(t, root, home, "SEQ_PLUGIN_BIN_DIR="+f.bin, "SEQ_SERVER_URL="+f.url, "SEQ_ACCOUNT_FILE="+f.credFile, "SEQ_CA_FILE="+f.caFile)
 		if !has(env, "SEQ_CREDENTIAL_FILE") {
 			t.Fatalf("SEQ_ACCOUNT_FILE did not reach the server: %v", env)
 		}
@@ -397,7 +397,7 @@ func (f *fixture) gemini(t *testing.T, root string) {
 
 	t.Run("the old setup fails", func(t *testing.T) {
 		// What the README used to say: export SEQ_CREDENTIAL_FILE. Gemini strips it.
-		env := report(t, root, home, "SEQ_SERVER_URL="+f.url, "SEQ_CREDENTIAL_FILE="+f.credFile, "SEQ_CA_FILE="+f.caFile)
+		env := report(t, root, home, "SEQ_PLUGIN_BIN_DIR="+f.bin, "SEQ_SERVER_URL="+f.url, "SEQ_CREDENTIAL_FILE="+f.credFile, "SEQ_CA_FILE="+f.caFile)
 		if has(env, "SEQ_CREDENTIAL_FILE") {
 			t.Fatalf("Gemini no longer strips SEQ_CREDENTIAL_FILE; this check's reason is gone: %v", env)
 		}

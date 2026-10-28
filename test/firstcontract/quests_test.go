@@ -66,9 +66,10 @@ func TestBarleycrossChainThroughTheTools(t *testing.T) {
 	}
 	c.s.Advance(30 * time.Second)
 	// The server settles the step on its own tick; under a loaded host that can
-	// trail Advance, so wait for the pay before asking.
+	// trail Advance, and the pay can show before the quest state the tool reads.
+	// Wait on what the assertion checks: the tool no longer showing the step.
 	for end := time.Now().Add(15 * time.Second); time.Now().Before(end); time.Sleep(50 * time.Millisecond) {
-		if ch, _ := c.s.Character("c1"); ch.Entity.XP == 8 {
+		if strings.Contains(c.call("quests", obj{}), "no quest chain") {
 			break
 		}
 	}
