@@ -201,8 +201,8 @@ prices, and every answer says accepted or why not.
   ferry "can't cross right now" (`ferry_down`) no fare is taken, and if it fails
   after the fare was paid, a `refund` event says "your fare is returned"; the
   crowns are back in `observe`. Try again later.
-- Selling: a vendor pays only a share of the price, 25% for Common and Fine
-  items and 10% for Rare and Named ones. Rare and Named items sell for little,
+- Selling: a vendor pays only a share of the price, 7% for Common, 9% for Fine
+  and 10% for Rare and Named items. Vendors pay little for anything,
   so keep them to wear or to bank; they are bound to the character and cannot be
   traded. Do not sell one without asking.
 
