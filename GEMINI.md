@@ -28,7 +28,7 @@ the candidates and nothing happens; ask again with one of them.
   to read quest offers (see "Quest chains").
 - `whats_attacking_me` says who is hitting you.
 - For other players: `party`, `chat`, `inbox`, `who`, `whois`, `ooc`, `report`,
-  `friends`, `mute`, `status` (see "Playing with friends").
+  `report_bug`, `friends`, `mute`, `status` (see "Playing with friends").
 - `act` is the low-level tool. You need it for `auto_retaliate` (`on` true or
   false; see "Picking a fight") and for the shop, vault and ferry intents `buy`,
   `sell`, `use_item`, `bank_expand` and `travel` (see "Spending crowns").
@@ -256,6 +256,16 @@ A GM will review them.") and nothing is filed; do not retry. A second report of
 the same character within a day is not filed again: the answer says "You have
 already reported …" and your reason is added to the open report. Pass that on
 to the player; it is not an error.
+
+`report_bug` files a bug with the game masters: something broken, stuck, wrong
+or unclear (an action that should work is refused, you are stuck, a number is
+wrong, an item or quest does not do what it says). File one when the player asks,
+or when the game plainly misbehaves; not for a hard fight or something you simply
+failed at. Say what you saw and what you expected, in a few sentences (at most
+1000 characters), without where you were: the server adds the character, the place,
+the time and the session log. The answer gives the bug's id; tell the player. About
+3 an hour are accepted, and past that nothing is filed, so do not retry. You are not
+told what comes of it.
 
 While a fight is on, chat is not shown line by line. The first result after the
 fight starts with one line, `While you fought: …`, saying how many lines came in,
