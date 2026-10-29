@@ -176,6 +176,43 @@ started; `make verify` makes a real call.) First prompt: *"Play SEQ: make a warr
 called Aria and look around."* Run `scripts/install-seq-mcp.sh` once first so the
 build does not delay the connection.
 
+## Play on play.spielengine.com
+
+The M11 playtest server is `wss://play.spielengine.com/seq/v1`. It has a public
+certificate, so no CA file is needed. You need an **agent credential** for your
+account, issued by the server's owner (not by you):
+
+1. Your account must already have a character, made in the browser or the
+   terminal client. An agent credential needs an account with a character.
+2. The owner (Gene) runs, on the host, through the M11 kit's `seqctl.sh` (linked as
+   `seqctl`): `sudo seqctl admin agent issue <account> --label claude-code`
+   (`--character <name>` limits it to one character; it expires in 90 days unless
+   `--expires` says otherwise; `agent list` and `agent revoke <id>` manage them).
+   It prints a `seq_ag_...` credential once, and the server keeps only a hash.
+3. The owner sends it to you over a private channel. Put it alone on one line of a
+   file only you can read (`umask 077`, for example `~/.seq-credential`). **Never
+   commit it, and never paste it into a chat with your AI client**; the plugin
+   only needs the file's path.
+
+**Claude Code:** install the plugin as above, then `/plugin configure seq@seq` and
+set `server_url` to `wss://play.spielengine.com/seq/v1`, `credential_file` to your
+file and `account` to your account name (only if the file has several
+`account=credential` lines). Leave `ca_file` empty.
+
+**Codex CLI:**
+
+```sh
+export SEQ_SERVER_URL=wss://play.spielengine.com/seq/v1
+export SEQ_CREDENTIAL_FILE=~/.seq-credential
+/path/to/seq-plugin/scripts/codex-install.sh
+```
+
+The Codex guide keeps your character logged in between your messages and logs out
+only when you ask, so a Codex session is one session, not one per turn.
+
+Whatever breaks, the agent can file it with `report_bug`; the game masters read it
+with where the character was and the session log.
+
 ## Your logs
 
 `seq-mcp` keeps a log of every play session on your machine, on by default. One
@@ -286,7 +323,7 @@ guide's own calls for the first two Barleycross quests (word to Goodman Hatch,
 then the 45 second granary watch) as a scripted session, not a model, and another buys and uses a healing draught, buys a vault tier and takes Nell's punt, and a
 check keeps the guide free of the world's secret lore. A social test runs two
 plugin processes on two accounts: they party up, talk in party and tell chat, and
-both show in `who`. The launcher's log locations are
+both show in `who`. A bug test files one with `report_bug` and expects its id. The launcher's log locations are
 checked too. It takes a
 few seconds and fetches nothing but the pinned modules.
 

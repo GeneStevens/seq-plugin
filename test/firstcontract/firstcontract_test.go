@@ -452,6 +452,25 @@ func TestLookShowsDifficulty(t *testing.T) {
 	}
 }
 
+// TestReportBug: an agent that logs in with an issued credential (the test
+// server issues them the way `seqd admin agent issue` does; -dev-agent is not
+// used, and a real seqd's admin command needs PostgreSQL) files a bug through
+// report_bug and is given its id. Empty text is refused.
+func TestReportBug(t *testing.T) {
+	s := startServer(t, testserver.Account{Name: "ann", Characters: []string{"c1"}})
+	s.GM() // the game masters' service keeps the bugs; without it report_bug is unavailable
+	c, _, _, stop := launchPlugin(t, s, buildPlugin(t, time.Now()), "ann", "c1")
+	defer stop()
+	c.call("new_character", obj{"name": "Dara", "class": "warrior"}, "Made Dara")
+	text := c.call("report_bug", obj{"text": "The contract board lists a job I cannot take; I expected it to be accepted."})
+	if !regexp.MustCompile(`(?i)bug[^\n]*\S*\d`).MatchString(text) {
+		t.Errorf("report_bug returned no id: %q", text)
+	}
+	if !strings.Contains(strings.Join(c.tools, " "), "report_bug") {
+		t.Errorf("tools/list lacks report_bug: %v", c.tools)
+	}
+}
+
 // TestDismissQuest: dismiss_quest ends the chain for good.
 func TestDismissQuest(t *testing.T) {
 	c, _, _, stop := startPlugin(t, time.Now())
