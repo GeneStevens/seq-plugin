@@ -42,7 +42,7 @@ func TestDraughtVaultAndPuntThroughTheTools(t *testing.T) {
 
 	// The punt: ten crowns across the Millrace to Eelmere. A second character,
 	// homed in the Downs, stands at the landing, so the test does not walk the Downs past brigands.
-	s.Place("bob", "c2", core.Pos{X: 199000, Y: 308000})
+	s.Place("bob", "c2", core.Pos{X: 199000, Y: 142000})
 	s.Give("c2", func(cs *core.CharacterSave) { cs.Crowns = 25 })
 	d, _, _, stop2 := launchPlugin(t, s, binDir, "bob", "c2")
 	defer stop2()
@@ -53,7 +53,7 @@ func TestDraughtVaultAndPuntThroughTheTools(t *testing.T) {
 	if ev := d.call("recent_events", obj{}, "traveled: You sail with Nell's Punt to Eelmere"); strings.Contains(ev, "respawned") {
 		t.Errorf("the punt was told as a respawn:\n%s", ev)
 	}
-	if got, _ := d.s.Character("c2"); got.Entity.Crowns != 15 || got.Entity.Pos.Y < 400000 {
-		t.Errorf("after the punt: %d crowns at y=%d, want 15 at Eelmere", got.Entity.Crowns, got.Entity.Pos.Y)
+	if got, _ := d.s.Character("c2"); got.Entity.Crowns != 15 || got.Entity.Pos.Y > 100000 {
+		t.Errorf("after the punt: %d crowns at y=%d, want 15 at Eelmere (south of the landing)", got.Entity.Crowns, got.Entity.Pos.Y)
 	}
 }
